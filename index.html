@@ -42,8 +42,12 @@
     .counter { color: #536274; font-size: .85rem; font-variant-numeric: tabular-nums; }
     .counter.limit { color: #ac3040; font-weight: 700; }
     .copy-message { min-height: 1.4em; margin: 12px 0 0; color: #176346; font-size: .85rem; font-weight: 650; }
-    .output-card textarea { min-height: 260px; line-height: 1.85; white-space: pre; overflow-x: auto; overflow-y: hidden; overflow-wrap: normal; resize: none; }
+    .output-card textarea { min-height: 260px; line-height: 1.85; white-space: pre-wrap; overflow-x: hidden; overflow-y: hidden; overflow-wrap: anywhere; resize: none; }
     .output-grid[hidden] { display: none; }
+    .line-counts { display: grid; gap: 5px; margin: 12px 0 0; padding: 0; list-style: none; color: #536274; font-size: .81rem; font-variant-numeric: tabular-nums; }
+    .line-counts li { display: flex; justify-content: space-between; gap: 10px; padding: 4px 0; border-bottom: 1px solid #eef1f5; }
+    .line-counts li:last-child { border-bottom: 0; }
+    .line-counts .at-limit { color: #ac3040; font-weight: 700; }
     .counter { max-width: 100%; }
     .field-note { margin: 0 0 12px; color: #607082; font-size: .83rem; }
     .output-card .card-description { min-height: 0; }
@@ -85,7 +89,8 @@
         <p class="card-description">A clean, hyphen-separated filename optimized for search engines.</p>
         <label for="filename">Filenames</label>
         <p class="field-note">One filename per line. Each filename is limited to 100 characters.</p>
-        <textarea id="filename" spellcheck="false" aria-describedby="filenameCount"></textarea>
+        <textarea id="filename" spellcheck="false" aria-describedby="filenameCount filenameLineCounts"></textarea>
+        <ol class="line-counts" id="filenameLineCounts" aria-label="Character count per filename"></ol>
         <div class="output-footer">
           <span class="counter" id="filenameCount">0 filenames</span>
           <button class="btn btn-primary" type="button" id="copyFilename">Copy Filenames</button>
@@ -97,7 +102,8 @@
         <p class="card-description">A clear, descriptive, and accessible text alternative for your image.</p>
         <label for="altText">Alt Texts</label>
         <p class="field-note">One alt text per line. Each alt text is limited to 100 characters.</p>
-        <textarea id="altText" aria-describedby="altCount"></textarea>
+        <textarea id="altText" aria-describedby="altCount altLineCounts"></textarea>
+        <ol class="line-counts" id="altLineCounts" aria-label="Character count per alt text"></ol>
         <div class="output-footer">
           <span class="counter" id="altCount">0 alt texts</span>
           <button class="btn btn-primary" type="button" id="copyAlt">Copy Alt Texts</button>
@@ -209,12 +215,23 @@
     function updateCounter(kind) {
       const field = kind === "filename" ? filenameInput : altInput;
       const counter = kind === "filename" ? $("filenameCount") : $("altCount");
+      const lineCounts = kind === "filename" ? $("filenameLineCounts") : $("altLineCounts");
       const lines = field.value ? field.value.split("\n") : [];
-      const longest = Math.max(0, ...lines.map(line => line.length));
+      const longest = lines.reduce((max, line) => Math.max(max, line.length), 0);
       counter.textContent = lines.length + (kind === "filename" ? " filenames" : " alt texts") +
-        " · longest: " + longest + " / 100 characters per line" +
-        (longest === MAX ? " (limit reached)" : "");
-      counter.classList.toggle("limit", longest === MAX);
+        " · longest: " + longest + " / 100 characters per result";
+      counter.classList.toggle("limit", longest >= MAX);
+      lineCounts.replaceChildren();
+      lines.forEach((line, index) => {
+        const item = document.createElement("li");
+        const name = document.createElement("span");
+        const count = document.createElement("span");
+        name.textContent = (kind === "filename" ? "Filename " : "Alt text ") + (index + 1);
+        count.textContent = line.length + " / 100";
+        count.classList.toggle("at-limit", line.length >= MAX);
+        item.append(name, count);
+        lineCounts.append(item);
+      });
       fitOutput(field);
     }
     function render() {
