@@ -162,7 +162,6 @@
       return {heading, filename: fileDescription + "-" + fileSuffix, alt: altDescription + " " + altSuffix};
     }
     function setError(message, field) {
-      currentError = message;
       validation.textContent = message;
       templateInput.removeAttribute("aria-invalid");
       descriptionInput.removeAttribute("aria-invalid");
