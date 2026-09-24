@@ -1,0 +1,245 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f7f8fa">
+  <meta name="description" content="Generate SEO-friendly image filenames and accessible alt text for Webflow Templates.">
+  <title>SEO Alt Text Generator | Webflow Toolkit</title>
+  <style>
+    :root { color-scheme: light; font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; font-synthesis: none; background: #f7f8fa; color: #18212e; }
+    * { box-sizing: border-box; }
+    body { margin: 0; min-width: 0; }
+    button, input, textarea { font: inherit; }
+    button { cursor: pointer; }
+    .page { width: min(1120px, calc(100% - 48px)); margin: 0 auto; padding: 72px 0 96px; }
+    .eyebrow { color: #5367b0; font-size: .76rem; letter-spacing: .13em; font-weight: 800; text-transform: uppercase; }
+    h1 { margin: 12px 0 12px; font-size: clamp(2rem, 4.4vw, 3.15rem); letter-spacing: -.045em; line-height: 1.08; }
+    .intro { max-width: 690px; margin: 0; font-size: 1.03rem; line-height: 1.65; color: #586576; }
+    .panel { margin-top: 36px; padding: 32px; border: 1px solid #e3e7ee; border-radius: 20px; background: #fff; box-shadow: 0 12px 36px rgba(32, 43, 65, .035); }
+    .field + .field { margin-top: 24px; }
+    label { display: block; margin-bottom: 10px; font-weight: 700; font-size: .92rem; }
+    input, textarea { display: block; width: 100%; min-width: 0; padding: 14px 16px; border: 1px solid #cdd5df; border-radius: 11px; background: #fff; color: #18212e; line-height: 1.55; outline: none; transition: border-color .18s, box-shadow .18s; }
+    input::placeholder, textarea::placeholder { color: #758193; }
+    input:focus-visible, textarea:focus-visible, button:focus-visible { outline: 3px solid #9bb7ff; outline-offset: 2px; border-color: #4769da; }
+    input[aria-invalid="true"], textarea[aria-invalid="true"] { border-color: #ba3646; }
+    .description { min-height: 126px; resize: vertical; }
+    .hint, .card-description { font-size: .86rem; line-height: 1.55; color: #607082; }
+    .hint { margin: 8px 0 0; }
+    .actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 26px; }
+    .btn { border: 1px solid #d4dbe5; border-radius: 10px; padding: 12px 17px; background: #fff; color: #263449; font-weight: 700; line-height: 1.2; transition: background .18s, border-color .18s, transform .18s; }
+    .btn:hover { background: #edf1f8; border-color: #b9c5d4; }
+    .btn:active { transform: translateY(1px); }
+    .btn-primary { color: #fff; background: #3454cc; border-color: #3454cc; }
+    .btn-primary:hover { color: #fff; background: #2847ba; border-color: #2847ba; }
+    .message { min-height: 1.5em; margin: 13px 0 0; color: #ad3040; font-size: .88rem; font-weight: 650; }
+    .output-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; margin-top: 22px; }
+    .output-card { display: flex; flex-direction: column; min-width: 0; padding: 26px; border: 1px solid #e3e7ee; border-radius: 18px; background: #fff; }
+    .output-card h2 { margin: 0; font-size: 1.18rem; letter-spacing: -.02em; }
+    .card-description { min-height: 2.9em; margin: 10px 0 18px; }
+    .output-card textarea { min-height: 120px; flex: 1; resize: vertical; overflow-wrap: anywhere; }
+    .output-footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-top: 12px; }
+    .counter { color: #536274; font-size: .85rem; font-variant-numeric: tabular-nums; }
+    .counter.limit { color: #ac3040; font-weight: 700; }
+    .copy-message { min-height: 1.4em; margin: 12px 0 0; color: #176346; font-size: .85rem; font-weight: 650; }
+    @media (max-width: 767px) { .page { width: min(100% - 32px, 560px); padding: 44px 0 56px; } .panel { padding: 22px; margin-top: 26px; } .output-grid { grid-template-columns: 1fr; gap: 14px; } .output-card { padding: 22px; } .card-description { min-height: 0; } }
+    @media (max-width: 390px) { .page { width: calc(100% - 24px); } .panel, .output-card { padding: 16px; border-radius: 14px; } .actions .btn { width: 100%; } .output-footer .btn { width: 100%; } }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition: none !important; scroll-behavior: auto !important; } }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header>
+      <div class="eyebrow">Webflow Toolkit</div>
+      <h1>SEO Alt Text Generator</h1>
+      <p class="intro">Generate SEO-friendly image filenames and accessible alt text for your Webflow Templates.</p>
+    </header>
+    <section class="panel" aria-label="Generator inputs">
+      <div class="field">
+        <label for="templateName">Template Name</label>
+        <input id="templateName" type="text" placeholder="Enter your Webflow Template name..." autocomplete="off" spellcheck="false">
+      </div>
+      <div class="field">
+        <label for="imageDescription">Image Description</label>
+        <textarea id="imageDescription" class="description" placeholder="Paste or type your image description here..." aria-describedby="descriptionHint"></textarea>
+        <p class="hint" id="descriptionHint">Describe what the image shows. Keep your description clear and specific.</p>
+      </div>
+      <div class="actions">
+        <button class="btn btn-primary" type="button" id="generate">Generate SEO Text</button>
+        <button class="btn" type="button" id="clearDescription">Clear Description</button>
+        <button class="btn" type="button" id="resetAll">Reset All</button>
+      </div>
+      <p class="message" id="validation" role="status" aria-live="polite"></p>
+    </section>
+    <section class="output-grid" aria-label="Generated results">
+      <article class="output-card">
+        <h2>SEO Image Filename</h2>
+        <p class="card-description">A clean, hyphen-separated filename optimized for search engines.</p>
+        <label for="filename">Filename</label>
+        <textarea id="filename" maxlength="100" spellcheck="false" aria-describedby="filenameCount"></textarea>
+        <div class="output-footer">
+          <span class="counter" id="filenameCount">0 / 100 characters</span>
+          <button class="btn btn-primary" type="button" id="copyFilename">Copy Filename</button>
+        </div>
+        <p class="copy-message" id="filenameMessage" role="status" aria-live="polite"></p>
+      </article>
+      <article class="output-card">
+        <h2>Image Alt Text</h2>
+        <p class="card-description">A clear, descriptive, and accessible text alternative for your image.</p>
+        <label for="altText">Alt Text</label>
+        <textarea id="altText" maxlength="100" aria-describedby="altCount"></textarea>
+        <div class="output-footer">
+          <span class="counter" id="altCount">0 / 100 characters</span>
+          <button class="btn btn-primary" type="button" id="copyAlt">Copy Alt Text</button>
+        </div>
+        <p class="copy-message" id="altMessage" role="status" aria-live="polite"></p>
+      </article>
+    </section>
+  </main>
+  <script>
+    "use strict";
+    const MAX = 100;
+    const $ = (id) => document.getElementById(id);
+    const templateInput = $("templateName");
+    const descriptionInput = $("imageDescription");
+    const filenameInput = $("filename");
+    const altInput = $("altText");
+    const validation = $("validation");
+    const timers = new Map();
+
+    // Normalize user input without introducing details that were not supplied.
+    function words(value) {
+      return value.normalize("NFKD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/([a-z\d])([A-Z])/g, "$1 $2")
+        .replace(/[_\u2010-\u2015-]+/g, " ")
+        .replace(/[^a-zA-Z0-9\s]/g, " ")
+        .trim().split(/\s+/).filter(Boolean);
+    }
+    function slug(value) { return words(value).map((word) => word.toLowerCase()).join("-"); }
+    function title(value) {
+      return words(value).map((word) => {
+        if (/^[A-Z0-9]{2,5}$/.test(word) && /[A-Z]/.test(word)) return word;
+        return word[0].toUpperCase() + word.slice(1).toLowerCase();
+      }).join(" ");
+    }
+    function templateLabel(value) {
+      // Preserve intentional brand capitalization and internal spacing.
+      return value.trim().replace(/\s+/g, " ").replace(/[_\u2010-\u2015-]+/g, " ");
+    }
+    function shortenDescription(tokens, budget, separator) {
+      if (budget <= 0) return "";
+      // Remove repeated words first and then trim whole trailing words.
+      const seen = new Set();
+      const unique = tokens.filter((word) => {
+        const key = word.toLowerCase();
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+      const selected = [];
+      for (const word of unique) {
+        const candidate = [...selected, word].join(separator);
+        if (candidate.length > budget) break;
+        selected.push(word);
+      }
+      return selected.join(separator);
+    }
+    function updateCounters() {
+      for (const [field, count] of [[filenameInput, $("filenameCount")], [altInput, $("altCount")]]) {
+        const length = Array.from(field.value).length;
+        count.textContent = length + " / 100 characters" + (length >= MAX ? " (limit reached)" : "");
+        count.classList.toggle("limit", length >= MAX);
+      }
+    }
+    function clearMessages() {
+      validation.textContent = "";
+      templateInput.removeAttribute("aria-invalid");
+      descriptionInput.removeAttribute("aria-invalid");
+      $("filenameMessage").textContent = "";
+      $("altMessage").textContent = "";
+    }
+    function clearOutputs() { filenameInput.value = ""; altInput.value = ""; updateCounters(); }
+    function generate(showErrors = false) {
+      clearMessages();
+      const rawDescription = descriptionInput.value.trim();
+      const rawTemplate = templateInput.value.trim();
+      if (!rawTemplate || !rawDescription) {
+        clearOutputs();
+        if (showErrors) {
+          const missingTemplate = !rawTemplate;
+          validation.textContent = missingTemplate ? "Please enter your template name." : "Please enter an image description.";
+          (missingTemplate ? templateInput : descriptionInput).setAttribute("aria-invalid", "true");
+        }
+        return;
+      }
+      const nameSlug = slug(rawTemplate);
+      const nameLabel = templateLabel(rawTemplate);
+      const descriptionWords = words(rawDescription);
+      if (!nameSlug || !descriptionWords.length) {
+        clearOutputs();
+        validation.textContent = !nameSlug ? "Please enter a valid template name." : "Please enter an image description.";
+        (!nameSlug ? templateInput : descriptionInput).setAttribute("aria-invalid", "true");
+        return;
+      }
+      const fileSuffix = nameSlug + "-webflow-template";
+      const altSuffix = nameLabel + " Webflow Template";
+      // Reserve room for at least one descriptive word and its separator.
+      const fileBudget = MAX - fileSuffix.length - 1;
+      const altBudget = MAX - altSuffix.length - 1;
+      if (fileBudget < 1 || altBudget < 1) {
+        clearOutputs();
+        validation.textContent = "Your template name is too long. Please shorten it to keep the generated text within 100 characters.";
+        templateInput.setAttribute("aria-invalid", "true");
+        return;
+      }
+      const fileDescription = shortenDescription(descriptionWords.map((word) => word.toLowerCase()), fileBudget, "-");
+      const altDescription = shortenDescription(words(title(rawDescription)), altBudget, " ");
+      if (!fileDescription || !altDescription) {
+        clearOutputs();
+        validation.textContent = "Your template name is too long. Please shorten it to keep the generated text within 100 characters.";
+        templateInput.setAttribute("aria-invalid", "true");
+        return;
+      }
+      filenameInput.value = fileDescription + "-" + fileSuffix;
+      altInput.value = altDescription + " " + altSuffix;
+      updateCounters();
+    }
+    function resetOutputs() {
+      clearMessages();
+      clearOutputs();
+    }
+    function notify(id, message) {
+      const element = $(id);
+      clearTimeout(timers.get(id));
+      element.textContent = message;
+      timers.set(id, setTimeout(() => { element.textContent = ""; }, 2500));
+    }
+    async function copyText(input, messageId, successMessage) {
+      if (!input.value) return;
+      try {
+        if (navigator.clipboard && window.isSecureContext) {
+          await navigator.clipboard.writeText(input.value);
+        } else {
+          input.focus(); input.select();
+          if (!document.execCommand("copy")) throw new Error("Copy not supported");
+          input.setSelectionRange(input.value.length, input.value.length);
+        }
+        notify(messageId, successMessage);
+      } catch {
+        notify(messageId, "Unable to copy automatically. Please select and copy the text.");
+      }
+    }
+    templateInput.addEventListener("input", () => generate(false));
+    descriptionInput.addEventListener("input", () => generate(false));
+    $("generate").addEventListener("click", () => generate(true));
+    $("clearDescription").addEventListener("click", () => { descriptionInput.value = ""; resetOutputs(); descriptionInput.focus(); });
+    $("resetAll").addEventListener("click", () => { templateInput.value = ""; descriptionInput.value = ""; resetOutputs(); templateInput.focus(); });
+    filenameInput.addEventListener("input", updateCounters);
+    altInput.addEventListener("input", updateCounters);
+    $("copyFilename").addEventListener("click", () => copyText(filenameInput, "filenameMessage", "Filename copied to clipboard!"));
+    $("copyAlt").addEventListener("click", () => copyText(altInput, "altMessage", "Alt text copied to clipboard!"));
+    updateCounters();
+  </script>
+</body>
+</html>
