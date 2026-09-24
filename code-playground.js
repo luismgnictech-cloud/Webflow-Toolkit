@@ -32,3 +32,13 @@ $('export').addEventListener('click',()=>{const blob=new Blob([buildDocument(val
 addEventListener('keydown',event=>{if((event.ctrlKey||event.metaKey)&&event.key==='Enter'){event.preventDefault();run();}});
 let initial=example;try{const saved=JSON.parse(localStorage.getItem(storageKey));if(saved&&editors.every(id=>typeof saved[id]==='string')){initial=saved;$('auto').checked=saved.auto!==false;}}catch{}
 editors.forEach(id=>$(id).value=initial[id]);run();
+
+// Collapse panels without removing their code or restarting the preview.
+document.querySelectorAll('.panel-toggle').forEach(button=>{
+ button.addEventListener('click',()=>{
+  const expanded=button.getAttribute('aria-expanded')==='true';
+  button.setAttribute('aria-expanded',String(!expanded));
+  $(button.getAttribute('aria-controls')).hidden=expanded;
+  button.closest('.editor')?.classList.toggle('is-collapsed',expanded);
+ });
+});
