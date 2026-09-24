@@ -16,26 +16,28 @@
 <header><span class="eyebrow">Image optimization</span><h1>Image Compressor</h1><p>Optimize images without sacrificing quality. Keep the original format, dimensions, transparency and color information. Process multiple files locally in your browser.</p></header>
 <section class="panel" aria-label="Image compression settings">
 <div class="drop" id="drop" tabindex="0" role="button" aria-label="Choose images or drop them here"><strong>Drop your images here</strong><p>Or select images from your device. Multiple files supported.</p><button type="button" class="btn btn-primary" id="choose">Choose Images</button><input id="files" type="file" multiple accept="image/jpeg,image/png,image/webp,image/avif,.jpg,.jpeg,.png,.webp,.avif"></div>
-<div class="controls"><div class="control"><strong>Lossless · Original format</strong><span class="hint">Image quality comes first. No conversion, resizing or quality reduction.</span></div></div>
+<div class="controls"><div class="control"><strong>Lossless · Original format</strong><span class="hint">Image quality comes first. No conversion, resizing or quality reduction.</span></div><div class="control"><strong>Maximum size: 385 KB per image</strong><span class="hint">Only images within the limit are available to download. If lossless compression cannot reach it, we tell you instead of reducing quality.</span></div></div>
 <div class="actions"><button type="button" class="btn btn-primary" id="compress" disabled>Compress Images</button><button type="button" class="btn" id="clear">Clear All</button><span class="hint" id="selection">No files selected</span></div>
 <p class="status" id="status" role="status" aria-live="polite"></p>
 <p class="footnote">PNG: lossless compression with pixel data and metadata preserved. JPEG, WebP and AVIF: original files retained unchanged. If a PNG cannot be safely reduced, its original is retained too. Savings vary; already optimized files may not shrink. Files stay on your device.</p>
 </section>
-<section id="resultsSection" hidden aria-label="Compression results"><div class="results-heading"><h2 id="resultsTitle">Results</h2><span id="totalSavings" class="hint"></span></div><div class="results" id="results"></div></section>
+<section id="resultsSection" hidden aria-label="Compression results"><div class="results-heading"><h2 id="resultsTitle">Results</h2><span id="totalSavings" class="hint"></span></div><div class="actions" style="margin-bottom:16px"><a id="downloadAll" class="btn btn-primary" hidden download="images-lossless.zip">Download all (ZIP)</a><span class="hint" id="downloadSummary" role="status"></span></div><div class="results" id="results"></div></section>
 </main>
 <script>
 "use strict";
 const $=id=>document.getElementById(id);
 const picker=$("files"),drop=$("drop"),compressBtn=$("compress"),status=$("status");
 const mimeExt={"image/jpeg":"jpg","image/png":"png","image/webp":"webp","image/avif":"avif"};
-let queue=[],objectUrls=[],running=false;
+const MAX_IMAGE_BYTES=385000;
+let queue=[],objectUrls=[],running=false,readyDownloads=[];
 function message(text,error=false){status.textContent=text;status.classList.toggle("error",error)}
-function bytes(n){return n>=1048576?(n/1048576).toFixed(2)+" MB":(n/1024).toFixed(1)+" KB"}
+function bytes(n){return n>=1000000?(n/1000000).toFixed(2)+" MB":(n/1000).toFixed(2)+" KB"}
 function isAllowed(file){return Object.hasOwn(mimeExt,file.type)}
-function resetResults(){objectUrls.forEach(URL.revokeObjectURL);objectUrls=[];$("results").replaceChildren();$("resultsSection").hidden=true}
+function resetResults(){objectUrls.forEach(URL.revokeObjectURL);objectUrls=[];readyDownloads=[];$("downloadAll").hidden=true;$("downloadAll").removeAttribute("href");$("downloadSummary").textContent="";$("results").replaceChildren();$("resultsSection").hidden=true}
 function addFiles(files){
  if(running)return;
  const incoming=Array.from(files),accepted=incoming.filter(isAllowed);
+ if(accepted.length)resetResults();
  queue.push(...accepted);
  picker.value="";
  compressBtn.disabled=queue.length===0;
@@ -124,6 +126,36 @@ async function optimize(file){
  // Never re-encode lossy formats: even a quality setting of 100 is not lossless.
  return {blob:file,type:file.type,unchanged:true,reason:"Lossless optimization is not available for this format; original retained."};
 }
+// Store the exact output bytes in a standard ZIP. No image re-encoding.
+async function buildZip(entries){
+ if(entries.length>65535)throw new Error("Too many images for one ZIP. Use a smaller batch.");
+ const localParts=[],centralParts=[],usedNames=new Set();let offset=0,centralSize=0;
+ for(const entry of entries){
+  const data=new Uint8Array(await entry.blob.arrayBuffer());
+  const clean=entry.name.replace(/[\\\\/\x00-\x1f]/g,"_")||"image";
+  const dot=clean.lastIndexOf("."),stem=dot>0?clean.slice(0,dot):clean,ext=dot>0?clean.slice(dot):"";
+  let filename=clean,index=2;
+  while(usedNames.has(filename.toLowerCase()))filename=stem+" ("+(index++)+")"+ext;
+  usedNames.add(filename.toLowerCase());
+  const name=new TextEncoder().encode(filename),checksum=crc32(data);
+  if(name.length>65535||data.length>0xffffffff)throw new Error("A file is too large for this ZIP.");
+  const local=new Uint8Array(30+name.length),lv=new DataView(local.buffer);
+  lv.setUint32(0,0x04034b50,true);lv.setUint16(4,20,true);lv.setUint16(6,0x0800,true);
+  lv.setUint16(12,33,true);lv.setUint32(14,checksum,true);
+  lv.setUint32(18,data.length,true);lv.setUint32(22,data.length,true);lv.setUint16(26,name.length,true);local.set(name,30);
+  const central=new Uint8Array(46+name.length),cv=new DataView(central.buffer);
+  cv.setUint32(0,0x02014b50,true);cv.setUint16(4,20,true);cv.setUint16(6,20,true);cv.setUint16(8,0x0800,true);
+  cv.setUint16(14,33,true);cv.setUint32(16,checksum,true);cv.setUint32(20,data.length,true);cv.setUint32(24,data.length,true);
+  cv.setUint16(28,name.length,true);cv.setUint32(42,offset,true);central.set(name,46);
+  localParts.push(local,data);centralParts.push(central);offset+=local.length+data.length;centralSize+=central.length;
+  if(offset+centralSize>0xffffffff)throw new Error("This ZIP is too large. Use a smaller batch.");
+ }
+ const end=new Uint8Array(22),ev=new DataView(end.buffer);
+ ev.setUint32(0,0x06054b50,true);ev.setUint16(8,entries.length,true);ev.setUint16(10,entries.length,true);
+ ev.setUint32(12,centralSize,true);ev.setUint32(16,offset,true);
+ return new Blob([...localParts,...centralParts,end],{type:"application/zip"});
+}
+function meetsSizeLimit(result){return result.blob.size<=MAX_IMAGE_BYTES;}
 function downloadUrl(blob){const url=URL.createObjectURL(blob);objectUrls.push(url);return url}
 function resultRow(file,result){
  const row=document.createElement("article");row.className="result";
@@ -135,23 +167,29 @@ function resultRow(file,result){
  details.textContent=bytes(file.size)+" → "+bytes(result.blob.size)+(result.width?" · "+result.width+" × "+result.height:"")+" · "+mimeExt[result.type].toUpperCase();
  const saving=document.createElement("div");saving.className="meta "+(reduction>0?"saving":"");
  saving.textContent=result.unchanged?result.reason:((100*(1-result.blob.size/file.size)).toFixed(1)+"% smaller · Lossless verified");
- info.append(name,details,saving);
- const a=document.createElement("a");a.className="btn btn-primary";a.href=downloadUrl(result.blob);a.download=file.name;a.textContent="Download";a.setAttribute("aria-label","Download optimized "+file.name);
+ const limit=document.createElement("div");limit.className="meta "+(meetsSizeLimit(result)?"saving":"error");
+ limit.textContent=meetsSizeLimit(result)?"Within 385 KB · Ready to download":"Over 385 KB · This optimizer could not reach the limit without changing the image. Excluded from downloads.";
+ info.append(name,details,saving,limit);
+ const a=document.createElement(meetsSizeLimit(result)?"a":"button");a.className="btn btn-primary";
+ if(meetsSizeLimit(result)){a.href=downloadUrl(result.blob);a.download=file.name;a.textContent="Download";a.setAttribute("aria-label","Download optimized "+file.name);}
+ else{a.type="button";a.disabled=true;a.textContent="Over size limit";}
  row.append(thumb,info,a);return row;
 }
 compressBtn.addEventListener("click",async()=>{
  if(running||!queue.length)return;
  running=true;compressBtn.disabled=true;$("clear").disabled=true;$("choose").disabled=true;
  resetResults();$("resultsSection").hidden=false;
- let saved=0,original=0,finished=0;
+ let saved=0,original=0,finished=0,overLimit=0,failed=0;
  try{
   for(const file of queue){
    message("Processing "+(finished+1)+" of "+queue.length+": "+file.name);
    try{
     const result=await optimize(file);
     original+=file.size;saved+=result.blob.size;
+    if(meetsSizeLimit(result))readyDownloads.push({name:file.name,blob:result.blob});else overLimit++;
     $("results").append(resultRow(file,result));
    }catch(error){
+    failed++;
     const row=document.createElement("article");row.className="result";
     const info=document.createElement("div");info.className="info";
     const name=document.createElement("div");name.className="filename";name.textContent=file.name;
@@ -161,7 +199,16 @@ compressBtn.addEventListener("click",async()=>{
    finished++;$("resultsTitle").textContent="Results ("+finished+"/"+queue.length+")";
   }
   $("totalSavings").textContent=original?("Total: "+bytes(original)+" → "+bytes(saved)+" · "+((1-saved/original)*100).toFixed(2)+"% smaller"):"No images processed";
-  message("Finished processing "+finished+" image(s). Review your downloads below.");
+  const count=readyDownloads.length;
+  $("downloadSummary").textContent=count+" of "+queue.length+" images ready · "+overLimit+" over 385 KB"+(failed?" · "+failed+" failed":"")+". ZIP contains only ready images.";
+  if(count){
+   message("Preparing ZIP for "+count+" image(s)…");
+   try{
+    const zip=await buildZip(readyDownloads),all=$("downloadAll");
+    all.href=downloadUrl(zip);all.textContent=count===queue.length?"Download all "+count+" images (ZIP)":"Download "+count+" ready images (ZIP)";all.hidden=false;
+   }catch(error){$("downloadSummary").textContent+=" ZIP unavailable: "+error.message+" Individual downloads remain available.";}
+  }
+  message("Finished: "+count+" image(s) within 385 KB."+(overLimit?" "+overLimit+" exceed the limit and were not included. Quality was preserved.":"")+(failed?" "+failed+" failed.":""),overLimit>0||failed>0);
  }finally{running=false;compressBtn.disabled=queue.length===0;$("clear").disabled=false;$("choose").disabled=false;}
 });
 </script>
