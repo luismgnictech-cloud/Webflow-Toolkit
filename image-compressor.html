@@ -160,7 +160,7 @@ compressBtn.addEventListener("click",async()=>{
    }
    finished++;$("resultsTitle").textContent="Results ("+finished+"/"+queue.length+")";
   }
-  $("totalSavings").textContent=original?("Total: "+bytes(original)+" → "+bytes(saved)+" · "+Math.round((1-saved/original)*100)+"% change"):"No images processed";
+  $("totalSavings").textContent=original?("Total: "+bytes(original)+" → "+bytes(saved)+" · "+((1-saved/original)*100).toFixed(2)+"% smaller"):"No images processed";
   message("Finished processing "+finished+" image(s). Review your downloads below.");
  }finally{running=false;compressBtn.disabled=queue.length===0;$("clear").disabled=false;$("choose").disabled=false;}
 });
