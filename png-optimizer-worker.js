@@ -26,10 +26,22 @@ self.onmessage=event=>{
   const {pixels,width,height,target}=event.data,source=new Uint8Array(pixels);
   if(!Number.isInteger(width)||!Number.isInteger(height)||width<=0||height<=0||width*height>16000000||source.length!==width*height*4)throw Error('Invalid image dimensions.');
   let best=null;
-  for(const colors of [256,192,128]){
-   const buffer=UPNG.encode([source.slice().buffer],width,height,colors);
+  for(const colors of [240,192,128]){
+   let buffer=UPNG.encode([source.slice().buffer],width,height,colors);
    const decoded=UPNG.decode(buffer),output=new Uint8Array(UPNG.toRGBA8(decoded)[0]);
-   if(decoded.width!==width||decoded.height!==height||!acceptableQuality(source,output,width,height))continue;
+   // Palette quantization can merge opaque and translucent edge pixels.
+   // Restore alpha endpoints before verification, then re-encode losslessly.
+   // Reserve palette space (240 rather than 256) for those repaired colors.
+   let repaired=false;
+   for(let i=3;i<source.length;i+=4){
+    if((source[i]===0||source[i]===255)&&source[i]!==output[i]){
+     output[i]=source[i];repaired=true;
+    }
+   }
+   if(repaired)buffer=UPNG.encode([output.buffer],width,height,0);
+   const finalDecoded=UPNG.decode(buffer),verified=new Uint8Array(UPNG.toRGBA8(finalDecoded)[0]);
+   if(finalDecoded.width!==width||finalDecoded.height!==height||verified.length!==source.length)continue;
+   if(decoded.width!==width||decoded.height!==height||!acceptableQuality(source,verified,width,height))continue;
    if(!best||buffer.byteLength<best.buffer.byteLength)best={buffer,colors};
    if(buffer.byteLength<=target)break;
   }

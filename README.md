@@ -34,7 +34,7 @@ This is a standalone static HTML application. Host `index.html` on any static we
 ## Image Compressor
 
 Open `image-compressor.html` through a static web server (including GitHub Pages).
-Smart mode is the default. PNGs use UPNG.js adaptive palettes of 256, 192 or 128
+Smart mode is the default. PNGs use UPNG.js adaptive palettes of 240, 192 or 128
 colors, with encode/decode verification and numerical quality checks on black and
 white backgrounds. Checks include 32-pixel tiles and transparency errors; they are
 heuristics, not a guarantee of visual equivalence. The tool stops reducing color
