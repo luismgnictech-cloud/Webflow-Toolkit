@@ -42,7 +42,7 @@
     .counter { color: #536274; font-size: .85rem; font-variant-numeric: tabular-nums; }
     .counter.limit { color: #ac3040; font-weight: 700; }
     .copy-message { min-height: 1.4em; margin: 12px 0 0; color: #176346; font-size: .85rem; font-weight: 650; }
-    .output-card textarea { min-height: 260px; line-height: 1.85; white-space: pre; overflow-x: auto; overflow-wrap: normal; }
+    .output-card textarea { min-height: 260px; line-height: 1.85; white-space: pre; overflow-x: auto; overflow-y: hidden; overflow-wrap: normal; resize: none; }
     .output-grid[hidden] { display: none; }
     .counter { max-width: 100%; }
     .field-note { margin: 0 0 12px; color: #607082; font-size: .83rem; }
@@ -77,7 +77,9 @@
       </div>
       <p class="message" id="validation" role="status" aria-live="polite"></p>
     </section>
-    <section class="output-grid" aria-label="Generated results" id="resultsSection" hidden>
+    <section aria-label="Generated results" id="resultsSection" hidden>
+      <p id="resultSummary" class="hint" role="status" aria-live="polite"></p>
+      <div class="output-grid">
       <article class="output-card">
         <h2>SEO Image Filename</h2>
         <p class="card-description">A clean, hyphen-separated filename optimized for search engines.</p>
@@ -102,6 +104,7 @@
         </div>
         <p class="copy-message" id="altMessage" role="status" aria-live="polite"></p>
       </article>
+      </div>
     </section>
   </main>
   <script>
@@ -198,6 +201,11 @@
         notify(message, "Unable to copy automatically. Please select and copy the text.");
       }
     }
+    function fitOutput(field) {
+      // Expand the textarea to display all generated headings without internal vertical scrolling.
+      field.style.height = "auto";
+      field.style.height = Math.max(260, field.scrollHeight + 2) + "px";
+    }
     function updateCounter(kind) {
       const field = kind === "filename" ? filenameInput : altInput;
       const counter = kind === "filename" ? $("filenameCount") : $("altCount");
@@ -207,9 +215,11 @@
         " · longest: " + longest + " / 100 characters per line" +
         (longest === MAX ? " (limit reached)" : "");
       counter.classList.toggle("limit", longest === MAX);
+      fitOutput(field);
     }
     function render() {
       resultsSection.hidden = entries.length === 0;
+      $("resultSummary").textContent = entries.length + " headings generated · " + entries.length + " filenames · " + entries.length + " alt texts. All results are shown below."; 
       filenameInput.value = entries.map(entry => entry.filename).join("\n");
       altInput.value = entries.map(entry => entry.alt).join("\n");
       updateCounter("filename");
