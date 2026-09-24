@@ -48,6 +48,10 @@
     .line-counts li { display: flex; justify-content: space-between; gap: 10px; padding: 4px 0; border-bottom: 1px solid #eef1f5; }
     .line-counts li:last-child { border-bottom: 0; }
     .line-counts .at-limit { color: #ac3040; font-weight: 700; }
+    .line-counts li { align-items: center; flex-wrap: wrap; }
+    .line-counts .line-label { flex: 1 1 auto; }
+    .line-counts .line-copy { padding: 5px 10px; border-radius: 7px; font-size: .78rem; }
+    .line-counts .line-copy:disabled { cursor: not-allowed; opacity: .5; }
     .counter { max-width: 100%; }
     .field-note { margin: 0 0 12px; color: #607082; font-size: .83rem; }
     .output-card .card-description { min-height: 0; }
@@ -227,9 +231,21 @@
         const name = document.createElement("span");
         const count = document.createElement("span");
         name.textContent = (kind === "filename" ? "Filename " : "Alt text ") + (index + 1);
+        name.className = "line-label";
         count.textContent = line.length + " / 100";
         count.classList.toggle("at-limit", line.length >= MAX);
-        item.append(name, count);
+        const copyButton = document.createElement("button");
+        copyButton.type = "button";
+        copyButton.className = "btn line-copy";
+        copyButton.textContent = "Copy";
+        copyButton.setAttribute("aria-label", "Copy " + (kind === "filename" ? "filename " : "alt text ") + (index + 1));
+        copyButton.disabled = !line;
+        copyButton.addEventListener("click", () => {
+          const currentLine = field.value.split("\n")[index] || "";
+          const message = kind === "filename" ? $("filenameMessage") : $("altMessage");
+          copy(currentLine, message, (kind === "filename" ? "Filename " : "Alt text ") + (index + 1) + " copied to clipboard!");
+        });
+        item.append(name, count, copyButton);
         lineCounts.append(item);
       });
       fitOutput(field);
