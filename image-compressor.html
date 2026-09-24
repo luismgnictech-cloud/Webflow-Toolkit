@@ -13,15 +13,15 @@
 <body>
 <main class="page">
 <nav class="nav" aria-label="Toolkit navigation"><a class="brand" href="./">Webflow Toolkit</a><div class="links"><a href="./">SEO Alt Text Generator</a><a href="./image-compressor.html" aria-current="page">Image Compressor</a></div></nav>
-<header><span class="eyebrow">Image optimization</span><h1>Image Compressor</h1><p>Optimize images without sacrificing quality. Keep the original format, dimensions, transparency and color information. Process multiple files locally in your browser.</p></header>
+<header><span class="eyebrow">Image optimization</span><h1>Image Compressor</h1><p>Compress images in their original format. Preserve quality with lossless mode, or try a 385 KB target with optional quality reduction. Files are processed locally in your browser.</p></header>
 <section class="panel" aria-label="Image compression settings">
 <div class="drop" id="drop" tabindex="0" role="button" aria-label="Choose images or drop them here"><strong>Drop your images here</strong><p>Or select images from your device. Multiple files supported.</p><button type="button" class="btn btn-primary" id="choose">Choose Images</button><input id="files" type="file" multiple accept="image/jpeg,image/png,image/webp,image/avif,.jpg,.jpeg,.png,.webp,.avif"></div>
-<div class="controls"><div class="control"><strong>Lossless · Original format</strong><span class="hint">Image quality comes first. No conversion, resizing or quality reduction.</span></div><div class="control"><strong>Maximum size: 385 KB per image</strong><span class="hint">Only images within the limit are available to download. If lossless compression cannot reach it, we tell you instead of reducing quality.</span></div></div>
+<div class="controls"><div class="control"><label for="mode">Compression mode</label><select id="mode"><option value="lossless">Lossless · Preserve quality</option><option value="target">Try 385 KB · Allow quality reduction</option></select><span class="hint">Lossless is the default. Target mode may change colors or quality and remove metadata. Format and dimensions stay the same.</span></div><div class="control"><strong>Target size: 385 KB per image</strong><span class="hint">All processed images can be downloaded individually or together, including those above the target. Reaching 385 KB is not guaranteed.</span></div></div>
 <div class="actions"><button type="button" class="btn btn-primary" id="compress" disabled>Compress Images</button><button type="button" class="btn" id="clear">Clear All</button><span class="hint" id="selection">No files selected</span></div>
 <p class="status" id="status" role="status" aria-live="polite"></p>
-<p class="footnote">PNG: lossless compression with pixel data and metadata preserved. JPEG, WebP and AVIF: original files retained unchanged. If a PNG cannot be safely reduced, its original is retained too. Savings vary; already optimized files may not shrink. Files stay on your device.</p>
+<p class="footnote">Lossless mode preserves PNG pixel data and metadata; other formats are retained unchanged. Target mode tries reduced PNG color precision or JPEG/WebP quality. Animated images and AVIF are retained without lossy re-encoding. Review target-mode images before use. Files stay on your device.</p>
 </section>
-<section id="resultsSection" hidden aria-label="Compression results"><div class="results-heading"><h2 id="resultsTitle">Results</h2><span id="totalSavings" class="hint"></span></div><div class="actions" style="margin-bottom:16px"><a id="downloadAll" class="btn btn-primary" hidden download="images-lossless.zip">Download all (ZIP)</a><span class="hint" id="downloadSummary" role="status"></span></div><div class="results" id="results"></div></section>
+<section id="resultsSection" hidden aria-label="Compression results"><div class="results-heading"><h2 id="resultsTitle">Results</h2><span id="totalSavings" class="hint"></span></div><div class="actions" style="margin-bottom:16px"><a id="downloadAll" class="btn btn-primary" hidden download="images-compressed.zip">Download all (ZIP)</a><span class="hint" id="downloadSummary" role="status"></span></div><div class="results" id="results"></div></section>
 </main>
 <script>
 "use strict";
@@ -126,6 +126,53 @@ async function optimize(file){
  // Never re-encode lossy formats: even a quality setting of 100 is not lossless.
  return {blob:file,type:file.type,unchanged:true,reason:"Lossless optimization is not available for this format; original retained."};
 }
+// Target mode is explicitly opt-in. Never resize or change the output format.
+async function targetOptimize(file){
+ const lossless=await optimize(file);
+ if(meetsSizeLimit(lossless))return lossless;
+ const data=new Uint8Array(await file.arrayBuffer());
+ const marker=new TextDecoder("latin1").decode(data);
+ if(file.type==="image/avif"||marker.includes("acTL")||marker.includes("ANIM"))
+  return {...lossless,reason:(lossless.reason||"Lossless result retained.")+" Target encoding unavailable for this format or animation."};
+ let bitmap;
+ try{
+  bitmap=await createImageBitmap(file);
+  const width=bitmap.width,height=bitmap.height;
+  if(width*height>16000000)return {...lossless,reason:"Original or lossless result retained: image exceeds safe target-mode processing size."};
+  const canvas=document.createElement("canvas");canvas.width=width;canvas.height=height;
+  const ctx=canvas.getContext("2d",{willReadFrequently:true});ctx.drawImage(bitmap,0,0);
+  let best=lossless;
+  if(file.type==="image/png"){
+   if(typeof CompressionStream==="undefined")return {...lossless,reason:"Target PNG encoding unavailable in this browser; lossless result retained."};
+   const pixels=ctx.getImageData(0,0,width,height).data;
+   // Reduce RGB precision gradually, preserving every decoded alpha value.
+   for(const bits of [7,6,5,4,3,2]){
+    const levels=(1<<bits)-1,raw=new Uint8Array(height*(1+width*4));
+    for(let y=0;y<height;y++)for(let x=0;x<width;x++){
+     const src=(y*width+x)*4,dst=y*(1+width*4)+1+x*4;
+     for(let c=0;c<3;c++)raw[dst+c]=Math.round(Math.round(pixels[src+c]*levels/255)*255/levels);
+     raw[dst+3]=pixels[src+3];
+    }
+    const header=new Uint8Array(13),view=new DataView(header.buffer);
+    view.setUint32(0,width);view.setUint32(4,height);header[8]=8;header[9]=6;
+    const compressed=await transformBytes(raw,new CompressionStream("deflate"));
+    const blob=new Blob([new Uint8Array([137,80,78,71,13,10,26,10]),pngChunk("IHDR",header),pngChunk("sRGB",new Uint8Array([0])),pngChunk("IDAT",compressed),pngChunk("IEND",new Uint8Array())],{type:file.type});
+    if(blob.size<best.blob.size)best={blob,type:file.type,width,height,lossy:true,reason:"Color precision reduced · Transparency retained · Review image quality"};
+    if(meetsSizeLimit(best))break;
+   }
+  }else{
+   for(const quality of [0.95,0.9,0.85,0.8,0.7,0.6,0.5,0.4,0.3,0.2,0.1]){
+    const blob=await new Promise(resolve=>canvas.toBlob(resolve,file.type,quality));
+    // Unsupported encoders may silently return PNG: never accept that conversion.
+    if(!blob||blob.type!==file.type)break;
+    if(blob.size<best.blob.size)best={blob,type:file.type,width,height,lossy:true,reason:"Quality reduced · Review image quality"};
+    if(meetsSizeLimit(best))break;
+   }
+  }
+  return best;
+ }catch(error){return {...lossless,reason:"Target encoding unavailable; original or lossless result retained."};}
+ finally{if(bitmap)bitmap.close();}
+}
 // Store the exact output bytes in a standard ZIP. No image re-encoding.
 async function buildZip(entries){
  if(entries.length>65535)throw new Error("Too many images for one ZIP. Use a smaller batch.");
@@ -166,17 +213,17 @@ function resultRow(file,result){
  const reduction=file.size?Math.round((1-result.blob.size/file.size)*100):0;
  details.textContent=bytes(file.size)+" → "+bytes(result.blob.size)+(result.width?" · "+result.width+" × "+result.height:"")+" · "+mimeExt[result.type].toUpperCase();
  const saving=document.createElement("div");saving.className="meta "+(reduction>0?"saving":"");
- saving.textContent=result.unchanged?result.reason:((100*(1-result.blob.size/file.size)).toFixed(1)+"% smaller · Lossless verified");
+ saving.textContent=result.lossy?result.reason:result.unchanged?result.reason:((100*(1-result.blob.size/file.size)).toFixed(1)+"% smaller · Lossless verified");
  const limit=document.createElement("div");limit.className="meta "+(meetsSizeLimit(result)?"saving":"error");
- limit.textContent=meetsSizeLimit(result)?"Within 385 KB · Ready to download":"Over 385 KB · This optimizer could not reach the limit without changing the image. Excluded from downloads.";
+ limit.textContent=meetsSizeLimit(result)?"Within 385 KB · Ready to download":"Over 385 KB · Download available. Target size was not reached.";
  info.append(name,details,saving,limit);
- const a=document.createElement(meetsSizeLimit(result)?"a":"button");a.className="btn btn-primary";
- if(meetsSizeLimit(result)){a.href=downloadUrl(result.blob);a.download=file.name;a.textContent="Download";a.setAttribute("aria-label","Download optimized "+file.name);}
- else{a.type="button";a.disabled=true;a.textContent="Over size limit";}
+ const a=document.createElement("a");a.className="btn btn-primary";
+ a.href=downloadUrl(result.blob);a.download=file.name;a.textContent="Download";a.setAttribute("aria-label","Download "+file.name);
  row.append(thumb,info,a);return row;
 }
 compressBtn.addEventListener("click",async()=>{
  if(running||!queue.length)return;
+ const targetMode=$("mode").value==="target";$("mode").disabled=true;
  running=true;compressBtn.disabled=true;$("clear").disabled=true;$("choose").disabled=true;
  resetResults();$("resultsSection").hidden=false;
  let saved=0,original=0,finished=0,overLimit=0,failed=0;
@@ -184,9 +231,9 @@ compressBtn.addEventListener("click",async()=>{
   for(const file of queue){
    message("Processing "+(finished+1)+" of "+queue.length+": "+file.name);
    try{
-    const result=await optimize(file);
+    const result=await (targetMode?targetOptimize(file):optimize(file));
     original+=file.size;saved+=result.blob.size;
-    if(meetsSizeLimit(result))readyDownloads.push({name:file.name,blob:result.blob});else overLimit++;
+    readyDownloads.push({name:file.name,blob:result.blob});if(!meetsSizeLimit(result))overLimit++;
     $("results").append(resultRow(file,result));
    }catch(error){
     failed++;
@@ -200,7 +247,7 @@ compressBtn.addEventListener("click",async()=>{
   }
   $("totalSavings").textContent=original?("Total: "+bytes(original)+" → "+bytes(saved)+" · "+((1-saved/original)*100).toFixed(2)+"% smaller"):"No images processed";
   const count=readyDownloads.length;
-  $("downloadSummary").textContent=count+" of "+queue.length+" images ready · "+overLimit+" over 385 KB"+(failed?" · "+failed+" failed":"")+". ZIP contains only ready images.";
+  $("downloadSummary").textContent=count+" of "+queue.length+" images ready · "+overLimit+" over 385 KB"+(failed?" · "+failed+" failed":"")+". ZIP includes all processed images, including those over 385 KB.";
   if(count){
    message("Preparing ZIP for "+count+" image(s)…");
    try{
@@ -208,8 +255,8 @@ compressBtn.addEventListener("click",async()=>{
     all.href=downloadUrl(zip);all.textContent=count===queue.length?"Download all "+count+" images (ZIP)":"Download "+count+" ready images (ZIP)";all.hidden=false;
    }catch(error){$("downloadSummary").textContent+=" ZIP unavailable: "+error.message+" Individual downloads remain available.";}
   }
-  message("Finished: "+count+" image(s) within 385 KB."+(overLimit?" "+overLimit+" exceed the limit and were not included. Quality was preserved.":"")+(failed?" "+failed+" failed.":""),overLimit>0||failed>0);
- }finally{running=false;compressBtn.disabled=queue.length===0;$("clear").disabled=false;$("choose").disabled=false;}
+  message("Finished: "+count+" image(s) available to download. "+overLimit+" over 385 KB."+(targetMode?" Target mode may reduce quality; review results.":" Quality was preserved.")+(failed?" "+failed+" failed.":""),failed>0);
+ }finally{$("mode").disabled=false;running=false;compressBtn.disabled=queue.length===0;$("clear").disabled=false;$("choose").disabled=false;}
 });
 </script>
 </body>
