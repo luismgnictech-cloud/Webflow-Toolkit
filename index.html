@@ -42,15 +42,14 @@
     .counter { color: #536274; font-size: .85rem; font-variant-numeric: tabular-nums; }
     .counter.limit { color: #ac3040; font-weight: 700; }
     .copy-message { min-height: 1.4em; margin: 12px 0 0; color: #176346; font-size: .85rem; font-weight: 650; }
-    .result-row { margin-top: 20px; padding: 24px; background: #f2f5fa; border: 1px solid #e3e7ee; border-radius: 18px; min-width: 0; }
-    .result-heading { margin: 0; overflow-wrap: anywhere; font-size: 1.05rem; }
-    .result-index { color: #5367b0; font-weight: 750; font-size: .8rem; margin: 0 0 6px; }
-    .results-header { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; margin-top: 32px; }
-    .results-header h2 { margin: 0; }
-    .result-row .output-grid { margin-top: 16px; }
-    .empty-state { color: #607082; }
+    .output-card textarea { min-height: 260px; line-height: 1.85; white-space: pre; overflow-x: auto; overflow-wrap: normal; }
+    .output-grid[hidden] { display: none; }
+    .counter { max-width: 100%; }
+    .field-note { margin: 0 0 12px; color: #607082; font-size: .83rem; }
+    .output-card .card-description { min-height: 0; }
+    .output-card textarea:focus { border-color: #4769da; }
     @media (max-width: 767px) { .page { width: min(100% - 32px, 560px); padding: 44px 0 56px; } .panel { padding: 22px; margin-top: 26px; } .output-grid { grid-template-columns: 1fr; gap: 14px; } .output-card { padding: 22px; } .card-description { min-height: 0; } }
-    @media (max-width: 390px) { .page { width: calc(100% - 24px); } .panel, .output-card, .result-row { padding: 16px; border-radius: 14px; } .actions .btn { width: 100%; } .output-footer .btn { width: 100%; } }
+    @media (max-width: 390px) { .page { width: calc(100% - 24px); } .panel, .output-card { padding: 16px; border-radius: 14px; } .actions .btn { width: 100%; } .output-footer .btn { width: 100%; } }
     @media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition: none !important; scroll-behavior: auto !important; } }
   </style>
 </head>
@@ -69,7 +68,7 @@
       <div class="field">
         <label for="imageDescription">Image Descriptions</label>
         <textarea id="imageDescription" class="description" placeholder="Enter one image heading per line...&#10;Introducing the template marketplace&#10;Building your first customer support agent&#10;Agent monitoring dashboard V2" aria-describedby="descriptionHint"></textarea>
-        <p class="hint" id="descriptionHint">Enter one heading per line. Each line generates its own editable filename and alt text. Blank lines are ignored.</p>
+        <p class="hint" id="descriptionHint">Enter one heading per line. Results appear in two editable lists in the same order. Blank lines are ignored.</p>
       </div>
       <div class="actions">
         <button class="btn btn-primary" type="button" id="generate">Generate SEO Text</button>
@@ -78,10 +77,31 @@
       </div>
       <p class="message" id="validation" role="status" aria-live="polite"></p>
     </section>
-    <section aria-label="Generated results" id="resultsSection" hidden>
-      <div class="results-header"><h2 id="resultsTitle">Generated Results</h2><button class="btn" type="button" id="copyAll">Copy All Results</button></div>
-      <div id="results"></div>
-      <p id="batchMessage" class="copy-message" role="status" aria-live="polite"></p>
+    <section class="output-grid" aria-label="Generated results" id="resultsSection" hidden>
+      <article class="output-card">
+        <h2>SEO Image Filename</h2>
+        <p class="card-description">A clean, hyphen-separated filename optimized for search engines.</p>
+        <label for="filename">Filenames</label>
+        <p class="field-note">One filename per line. Each filename is limited to 100 characters.</p>
+        <textarea id="filename" spellcheck="false" aria-describedby="filenameCount"></textarea>
+        <div class="output-footer">
+          <span class="counter" id="filenameCount">0 filenames</span>
+          <button class="btn btn-primary" type="button" id="copyFilename">Copy Filenames</button>
+        </div>
+        <p class="copy-message" id="filenameMessage" role="status" aria-live="polite"></p>
+      </article>
+      <article class="output-card">
+        <h2>Image Alt Text</h2>
+        <p class="card-description">A clear, descriptive, and accessible text alternative for your image.</p>
+        <label for="altText">Alt Texts</label>
+        <p class="field-note">One alt text per line. Each alt text is limited to 100 characters.</p>
+        <textarea id="altText" aria-describedby="altCount"></textarea>
+        <div class="output-footer">
+          <span class="counter" id="altCount">0 alt texts</span>
+          <button class="btn btn-primary" type="button" id="copyAlt">Copy Alt Texts</button>
+        </div>
+        <p class="copy-message" id="altMessage" role="status" aria-live="polite"></p>
+      </article>
     </section>
   </main>
   <script>
@@ -91,13 +111,13 @@
     const templateInput = $("templateName");
     const descriptionInput = $("imageDescription");
     const validation = $("validation");
-    const results = $("results");
+    const filenameInput = $("filename");
+    const altInput = $("altText");
     const resultsSection = $("resultsSection");
     const timers = new Map();
     let entries = [];
     let lastSource = "";
     let lastTemplate = "";
-    let currentError = "";
 
     function words(value) {
       return value.normalize("NFKD")
@@ -179,54 +199,39 @@
         notify(message, "Unable to copy automatically. Please select and copy the text.");
       }
     }
-    function outputCard(entry, index, kind) {
-      const isFilename = kind === "filename";
-      const card = createElement("article", "output-card");
-      const title = createElement("h3", "", isFilename ? "SEO Image Filename" : "Image Alt Text");
-      const explanation = createElement("p", "card-description", isFilename ? "A clean, hyphen-separated filename optimized for search engines." : "A clear, descriptive, and accessible text alternative for your image.");
-      const label = createElement("label", "", isFilename ? "Filename" : "Alt Text");
-      const field = createElement("textarea");
-      field.id = kind + "-" + index;
-      field.maxLength = MAX;
-      field.value = entry[kind];
-      field.spellcheck = !isFilename;
-      label.htmlFor = field.id;
-      const footer = createElement("div", "output-footer");
-      const count = createElement("span", "counter");
-      count.id = kind + "-count-" + index;
-      field.setAttribute("aria-describedby", count.id);
-      const button = createElement("button", "btn btn-primary", isFilename ? "Copy Filename" : "Copy Alt Text");
-      button.type = "button";
-      const message = createElement("p", "copy-message");
-      message.setAttribute("role", "status");
-      message.setAttribute("aria-live", "polite");
-      function updateCounter() {
-        const length = field.value.length;
-        count.textContent = length + " / 100 characters" + (length === MAX ? " (limit reached)" : "");
-        count.classList.toggle("limit", length === MAX);
-      }
-      field.addEventListener("input", () => {
-        entry[kind] = field.value;
-        updateCounter();
-      });
-      button.addEventListener("click", () => copy(field.value, message, isFilename ? "Filename copied to clipboard!" : "Alt text copied to clipboard!"));
-      updateCounter();
-      footer.append(count, button);
-      card.append(title, explanation, label, field, footer, message);
-      return card;
+    function updateCounter(kind) {
+      const field = kind === "filename" ? filenameInput : altInput;
+      const counter = kind === "filename" ? $("filenameCount") : $("altCount");
+      const lines = field.value ? field.value.split("\n") : [];
+      const longest = Math.max(0, ...lines.map(line => line.length));
+      counter.textContent = lines.length + (kind === "filename" ? " filenames" : " alt texts") +
+        " · longest: " + longest + " / 100 characters per line" +
+        (longest === MAX ? " (limit reached)" : "");
+      counter.classList.toggle("limit", longest === MAX);
     }
     function render() {
-      results.replaceChildren();
       resultsSection.hidden = entries.length === 0;
-      $("resultsTitle").textContent = "Generated Results (" + entries.length + ")";
-      entries.forEach((entry, index) => {
-        const row = createElement("article", "result-row");
-        row.append(createElement("p", "result-index", "IMAGE " + (index + 1)), createElement("h3", "result-heading", entry.heading));
-        const grid = createElement("div", "output-grid");
-        grid.append(outputCard(entry, index, "filename"), outputCard(entry, index, "alt"));
-        row.append(grid);
-        results.append(row);
-      });
+      filenameInput.value = entries.map(entry => entry.filename).join("\n");
+      altInput.value = entries.map(entry => entry.alt).join("\n");
+      updateCounter("filename");
+      updateCounter("alt");
+    }
+    function editColumn(kind) {
+      const field = kind === "filename" ? filenameInput : altInput;
+      const lines = field.value.split("\n");
+      if (lines.some(line => line.length > MAX)) {
+        field.value = entries.map(entry => entry[kind]).join("\n");
+        notify(kind === "filename" ? $("filenameMessage") : $("altMessage"), "Each line must be 100 characters or fewer.");
+        return;
+      }
+      // Preserve the correspondence between source headings and the two output columns.
+      if (lines.length !== entries.length) {
+        field.value = entries.map(entry => entry[kind]).join("\n");
+        notify(kind === "filename" ? $("filenameMessage") : $("altMessage"), "Edit an existing line. To add or remove headings, use Image Descriptions above.");
+        return;
+      }
+      lines.forEach((line, index) => { entries[index][kind] = line; });
+      updateCounter(kind);
     }
     function generate(showErrors = false, force = false) {
       const source = descriptionInput.value;
@@ -278,10 +283,10 @@
       generate(false, true);
       templateInput.focus();
     });
-    $("copyAll").addEventListener("click", () => {
-      const text = entries.map((entry, index) => (index + 1) + ". " + entry.heading + "\nFilename: " + entry.filename + "\nAlt Text: " + entry.alt).join("\n\n");
-      copy(text, $("batchMessage"), "All results copied to clipboard!");
-    });
+    filenameInput.addEventListener("input", () => editColumn("filename"));
+    altInput.addEventListener("input", () => editColumn("alt"));
+    $("copyFilename").addEventListener("click", () => copy(filenameInput.value, $("filenameMessage"), "Filenames copied to clipboard!"));
+    $("copyAlt").addEventListener("click", () => copy(altInput.value, $("altMessage"), "Alt texts copied to clipboard!"));
   </script>
 </body>
 </html>
