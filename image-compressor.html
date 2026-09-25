@@ -6,6 +6,20 @@
 <title>Image Compressor | Webflow Toolkit</title>
 <style>
 :root{font-family:Inter,ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#26372f;background:#f5f7f3;font-synthesis:none}*{box-sizing:border-box}body{margin:0}button,select{font:inherit}button,a,summary{-webkit-tap-highlight-color:transparent}button,summary{cursor:pointer}a{color:inherit;text-underline-offset:3px}.nav{max-width:1152px;padding:24px;margin:auto;display:flex;align-items:center;justify-content:space-between;gap:22px}.brand{text-decoration:none;font-weight:800;letter-spacing:-.03em}.links{display:flex;flex-wrap:wrap;gap:22px;font-size:13px;color:#6a776f}.links a{text-decoration:none}.links a[aria-current]{color:#245e41;font-weight:700}.page{max-width:860px;padding:28px 24px 70px;margin:auto}header{text-align:center;margin-bottom:26px}h1{font-size:clamp(27px,4vw,38px);letter-spacing:-.045em;margin:0 0 10px}header p{color:#6a776f;font-size:14px;line-height:1.6;margin:0}.upload-shell{background:#244d39;border-radius:20px;padding:14px;box-shadow:0 12px 35px #234e3910}.drop{width:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;min-height:230px;border:2px dashed #a8c3ad88;border-radius:12px;background:radial-gradient(ellipse at top,#42694a66,transparent 70%);color:#fff;padding:30px 20px;cursor:pointer;transition:background .15s,border-color .15s}.drop:hover,.drop.drag{background:#365f44;border-color:#dcebd8}.drop strong{font-size:21px;letter-spacing:-.025em}.drop small{font-size:13px;color:#d1dfd2}.upload-icon{width:48px;height:48px;margin-bottom:2px;stroke:#d8e8bc;fill:none;stroke-width:1.6}.choose-label{font-size:13px;text-decoration:underline;text-underline-offset:4px;color:#e6edda}.settings-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:17px 5px 2px;color:#e0e8dd;font-size:12px}.settings-bar label{display:flex;align-items:center;gap:8px}.settings-bar select{max-width:190px;color:#fff;border:1px solid #6e8b72;border-radius:6px;background:#244d39;padding:6px 9px;font-size:12px}.settings-bar option{background:#fff;color:#26372f}.local-note{text-align:center;color:#728078;font-size:12px;margin:14px 0 20px}.local-note span{padding:0 7px}.status{font-size:13px;line-height:1.5;color:#54735d;margin:14px 0;overflow-wrap:anywhere}.status:empty{display:none}.status.error{color:#a44638}.results-heading{display:flex;align-items:center;justify-content:space-between;gap:14px;margin:28px 0 12px}.results-heading h2{font-size:15px;margin:0}.quiet{border:0;background:none;font-size:12px;color:#69766d;padding:8px}.quiet:hover{color:#273f30}.results{border:1px solid #dfe6db;border-radius:12px;overflow:hidden;background:#fff}.result{display:grid;grid-template-columns:38px minmax(0,1fr) auto;align-items:center;gap:14px;padding:16px 18px;border-bottom:1px solid #edf0e9}.result:last-child{border-bottom:0}.thumb{width:38px;height:38px;object-fit:contain;border-radius:6px;background:#f1f4ee}.file-icon{display:grid;place-items:center;color:#83927e;font-size:19px}.info{min-width:0}.filename{font-size:13px;font-weight:650;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.meta{font-size:12px;color:#778177;line-height:1.55;margin-top:3px;overflow-wrap:anywhere}.saving{color:#387744}.error{color:#a44638}.warning{color:#93661b}.download{color:#386b47;font-size:12px;font-weight:700;text-decoration:none;padding:8px 0 8px 12px;white-space:nowrap}.download:hover{text-decoration:underline}.result.is-error{background:#fffaf7}.result.is-error .info{grid-column:2/-1}.result.is-error .filename{white-space:normal;overflow-wrap:anywhere}.result.is-pending{background:#fafbf8}.batch-footer{display:flex;justify-content:space-between;align-items:center;gap:18px;margin-top:18px}.totals{font-size:13px;font-weight:650;line-height:1.6}.hint{font-size:12px;line-height:1.6;color:#778177;font-weight:400}.btn{display:inline-flex;justify-content:center;align-items:center;border:0;border-radius:8px;background:#427d49;color:white;padding:13px 21px;text-decoration:none;font-size:13px;font-weight:700;white-space:nowrap}.btn:hover{background:#316437}.details{margin-top:26px;padding-top:18px;border-top:1px solid #dde5d8;font-size:12px;color:#778177;line-height:1.7}.details summary{font-weight:600;color:#596b59;width:fit-content}.details p{max-width:720px;margin-bottom:0}button:disabled,select:disabled{opacity:.5;cursor:wait}:focus-visible{outline:3px solid #98b97f;outline-offset:4px}[hidden]{display:none!important}input[type=file]{display:none}@media(max-width:650px){.nav{padding:18px 16px;flex-direction:column;gap:14px;align-items:flex-start}.links{gap:15px;font-size:12px}.page{padding:20px 14px 42px}.drop{min-height:215px;padding:24px 10px}.drop strong{font-size:19px}.settings-bar{flex-wrap:wrap;justify-content:center}.result{padding:13px 12px;gap:10px;grid-template-columns:30px minmax(0,1fr) auto}.thumb{width:30px;height:30px}.batch-footer{flex-direction:column;align-items:stretch}.btn{width:100%}.download{padding-left:2px}.local-note{font-size:11px}.filename{font-size:12px}}
+
+/* Compact result rows: original file details on the left, output on the right. */
+.result.is-complete{grid-template-columns:52px minmax(0,1fr) auto auto;gap:16px;padding:14px 16px;min-height:82px;border-color:#eef0f3}
+.is-complete .thumb{width:52px;height:52px;border-radius:9px;background:#f3f5f6}
+.is-complete .filename{font-size:14px;font-weight:600;color:#303b4a;max-width:360px}
+.file-details{display:flex;align-items:center;gap:8px;margin-top:5px;font-size:12px;color:#8490a0}
+.format-badge{color:#1684ef;background:#f1f7ff;border-radius:3px;padding:1px 7px;font-size:12px;font-weight:700;letter-spacing:.04em}
+.output-stats{text-align:right;white-space:nowrap;min-width:58px}
+.output-saving{font-size:14px;font-weight:650;color:#303b4a}
+.output-size{font-size:12px;color:#8490a0;margin-top:4px}
+.result-download{display:inline-flex;align-items:center;justify-content:center;gap:10px;background:#2087ec;color:#fff;border-radius:0 10px 10px 0;padding:10px 14px;min-width:90px;text-decoration:none;font-size:12px;font-weight:750;letter-spacing:.03em}
+.result-download:hover{background:#0875df}.download-check{width:17px;height:17px;border-radius:50%;display:grid;place-items:center;background:#fff;color:#2087ec;font-size:12px;line-height:1}
+.result-note{font-size:11px;color:#93661b;margin-top:5px}
+@media(max-width:650px){.result.is-complete{grid-template-columns:42px minmax(0,1fr) auto;gap:10px;padding:13px 12px}.is-complete .thumb{width:42px;height:42px}.is-complete .filename{font-size:12px}.result-download{grid-column:3;grid-row:2;min-width:76px;padding:9px 10px}.is-complete .info{grid-column:2;grid-row:1/3}.output-stats{grid-column:3;grid-row:1}.is-complete .thumb{grid-row:1/3}.file-details{gap:5px;font-size:11px}.format-badge{font-size:10px;padding:1px 4px}.output-saving{font-size:13px}.output-size{font-size:11px}}
 </style></head><body>
 <nav class="nav" aria-label="Toolkit navigation"><a class="brand" href="./">Webflow Toolkit</a><div class="links"><a href="./">SEO Alt Text Generator</a><a href="./image-compressor.html" aria-current="page">Image Compressor</a><a href="./code-playground.html">Code Playground</a></div></nav>
 <main class="page"><header><h1>Smaller images. Simple.</h1><p>Drop your images, let us compress them, and download.</p></header>
@@ -220,19 +234,28 @@ function meetsSizeLimit(result){return result.blob.size<=MAX_IMAGE_BYTES;}
 
 function downloadUrl(blob){const url=URL.createObjectURL(blob);objectUrls.push(url);return url;}
 function resultRow(entry,result){
- const row=document.createElement("article");row.className="result";
+ const row=document.createElement("article");row.className="result is-complete";
  const thumb=document.createElement("img");thumb.className="thumb";thumb.alt="";thumb.src=downloadUrl(result.blob);
  const info=document.createElement("div");info.className="info";
  const name=document.createElement("div");name.className="filename";name.textContent=entry.name;name.title=entry.name;
- const meta=document.createElement("div");meta.className="meta";
+ const format=mimeExt[result.type].toUpperCase();
+ const details=document.createElement("div");details.className="file-details";
+ const badge=document.createElement("span");badge.className="format-badge";badge.textContent=format;
+ const original=document.createElement("span");original.textContent=bytes(entry.size);original.title="Original size";
+ details.append(badge,original);info.append(name,details);
+ if(!meetsSizeLimit(result)){const note=document.createElement("div");note.className="result-note";note.textContent="Above 385 KB target";info.append(note);}
+ const stats=document.createElement("div");stats.className="output-stats";
  const saving=entry.size?Math.max(0,(1-result.blob.size/entry.size)*100):0;
- meta.textContent=bytes(entry.size)+" → "+bytes(result.blob.size)+" · "+(saving?saving.toFixed(1)+"% smaller":"Original retained");
- const label=document.createElement("div");label.className="meta "+(meetsSizeLimit(result)?"saving":"warning");
- label.textContent=(result.lossy?"Smart compressed":result.unchanged?"Unchanged":"Lossless")+" · "+(meetsSizeLimit(result)?"Within 385 KB":"Above 385 KB target");
- if(result.reason)label.title=result.reason;
- info.append(name,meta,label);
- const a=document.createElement("a");a.className="download";a.href=downloadUrl(result.blob);a.download=entry.name;a.textContent="Download";a.setAttribute("aria-label","Download "+entry.name);
- row.append(thumb,info,a);return row;
+ const reduction=document.createElement("div");reduction.className="output-saving";
+ reduction.textContent=saving>=1?"−"+Math.round(saving)+"%":saving>0?"−"+saving.toFixed(1)+"%":"0%";
+ reduction.title=result.lossy?"Smart compression · Pixels may change":result.unchanged?"Original retained":"Lossless compression";
+ const size=document.createElement("div");size.className="output-size";size.textContent=bytes(result.blob.size);size.title="Compressed size";
+ stats.append(reduction,size);
+ const link=document.createElement("a");link.className="result-download";link.href=downloadUrl(result.blob);link.download=entry.name;
+ link.setAttribute("aria-label","Download "+format+" "+entry.name);link.title="Download "+format;
+ const check=document.createElement("span");check.className="download-check";check.textContent="✓";check.setAttribute("aria-hidden","true");
+ const label=document.createElement("span");label.textContent=format;
+ link.append(check,label);row.append(thumb,info,stats,link);return row;
 }
 async function processQueue(){
  if(running||!queue.length)return;
