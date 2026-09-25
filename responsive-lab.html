@@ -59,6 +59,35 @@ body:has(#engines-panel:not([hidden])) .view-tools{display:none}
 body:has(#engines-panel:not([hidden])) .lab-toolbar>.breakpoint-toolbar{display:none}
 @media(min-width:1500px){.lab-toolbar{flex-wrap:nowrap}.compact-url{flex:1 1 320px;max-width:640px}}
 @media(max-width:767px){.lab-toolbar>.breakpoint-toolbar{order:3;flex-basis:100%;border-left:0;border-top:1px solid #303239;padding:6px 0 0}.lab-toolbar .breakpoint-toolbar .breakpoint-popover{position:fixed;top:140px;left:12px;right:auto}}
+
+/* Device gallery is a keyboard-accessible modal, independent of the sidebar. */
+#device-picker{position:fixed;inset:72px 16px 16px auto;margin:0;width:540px;max-width:calc(100vw - 32px);height:min(850px,calc(100dvh - 88px));max-height:calc(100dvh - 32px);padding:0;border:1px solid #dbe0e8;border-radius:12px;background:#fff;color:#25334a;box-shadow:0 20px 80px #0005}
+#device-picker[open]{display:flex;flex-direction:column}
+#device-picker::backdrop{background:#10111380}
+.picker-header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 20px;border-bottom:1px solid #e8ebf0}
+.picker-header h2{margin:0;font-size:16px}.picker-header button{font-size:23px;min-width:36px;min-height:36px;padding:0;border:0;background:transparent;color:#687587}
+.picker-top{padding:16px 20px 0;flex-shrink:0;border-bottom:1px solid #e8ebf0}.picker-top h3{font-size:11px;color:#8a94a5;letter-spacing:.03em;margin:0 0 12px}
+#visible-devices{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+#visible-devices button{position:relative;width:51px;height:51px;border:1px solid #c9d3e3;border-radius:50%;padding:7px;background:#fff;color:#5f718c}
+#visible-devices button[aria-pressed=true]{border:2px solid #3697ff;background:#f1f8ff;color:#247fda}
+#visible-devices .picker-add{font-size:26px;border-style:dashed}#visible-devices .view-number{position:absolute;bottom:0;right:0;font-size:10px;background:#fff;border-radius:50%;padding:2px 4px}
+.picker-top .check{font-size:12px;margin:9px 0}.picker-top input[type=search]{font-size:13px;padding:9px 11px}
+.picker-scroll{overflow-y:auto;overscroll-behavior:contain;min-height:0;padding:0 20px 20px;scrollbar-width:thin}
+#device-picker .device-group,.picker-custom h3{font-size:14px;font-weight:500;text-transform:none;letter-spacing:0;color:#3c5576;margin:20px 0 9px}
+.device-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}
+.device-tile{position:relative;min-width:0}
+.device-tile .device-use{display:flex;flex-direction:column;justify-content:center;gap:5px;width:100%;height:112px;min-width:0;padding:12px 4px 7px;border:1px solid #cad4e4;border-radius:5px;background:#fff;color:#233c61;font-size:11px;font-weight:500;line-height:1.15;text-align:center;overflow-wrap:anywhere}
+.device-tile .device-use:hover{background:#f3f8ff;border-color:#70b3ff}
+.device-tile .device-use[aria-pressed=true]{border:2px solid #3697ff;background:#eef7ff;color:#173e6b}
+.device-tile small{font-size:9px;color:#7b899d}
+.device-tile .device-favorite,.device-tile .device-remove{position:absolute;top:1px;right:1px;width:23px;min-height:23px;padding:0;border:0;background:transparent;color:#8290a6;font-size:15px;z-index:1}
+.device-tile .device-favorite[aria-pressed=true]{color:#b47700;background:#fff4d6}
+.device-shape{display:block;width:14px;height:26px;border:1.3px solid currentColor;border-radius:2px;color:#8593a2;position:relative;flex-shrink:0}
+.device-shape:before{content:'';position:absolute;top:2px;left:35%;right:35%;height:1px;background:currentColor}
+.device-shape.tablet{width:23px;height:29px}.device-shape.desktop{width:34px;height:22px;border-radius:1px}.device-shape.desktop:before{top:auto;bottom:-4px;left:-3px;right:-3px}
+.picker-custom details{margin-top:12px}.picker-custom form{display:grid;gap:8px;margin-top:12px}.picker-note{margin-top:18px}.device-empty{font-size:13px;color:#758196;padding:18px 0}
+@media(max-width:600px){#device-picker{inset:12px;margin:0;width:auto;max-width:none;height:calc(100dvh - 24px);max-height:none}.picker-header,.picker-top{padding-left:14px;padding-right:14px}.picker-scroll{padding-left:14px;padding-right:14px}.device-grid{grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}}
+@media(max-width:380px){.device-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
 </style></head>
 <body>
 <a class="skip" href="#workspace">Saltar a las vistas</a>
@@ -76,7 +105,7 @@ body:has(#engines-panel:not([hidden])) .lab-toolbar>.breakpoint-toolbar{display:
 <details class="breakpoint-menu breakpoint-more"><summary aria-label="Más opciones de breakpoints" title="Más opciones">···</summary><div class="breakpoint-popover"><button id="small-mobile" type="button">Small mobile · 320 CSS px</button><p>Comparar ambos lados del límite</p><div id="boundaries" class="chips"></div></div></details>
 <button id="expand-workspace" type="button" aria-label="Pantalla completa" title="Pantalla completa"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M8 3H3v5m13-5h5v5M3 16v5h5m13-5v5h-5M3 3l6 6m12-6-6 6M3 21l6-6m12 6-6-6"/></svg></button>
 </div>
-<div class="toolbar-group view-tools" aria-label="Controles de vistas"><button id="toggle-sidebar" class="icon-control" aria-label="Panel de controles" data-tip="Panel de controles" title="Panel de controles" aria-expanded="true" aria-controls="sidebar"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18m-3-13h0m0 4h0"/></svg></button><button id="add-view" class="icon-control" aria-label="Añadir vista" data-tip="Añadir vista" title="Añadir vista" ><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M12 7v10M7 12h10"/></svg></button>
+<div class="toolbar-group view-tools" aria-label="Controles de vistas"><button id="open-devices" class="icon-control" type="button" aria-label="Dispositivos" title="Dispositivos" data-tip="Dispositivos" aria-haspopup="dialog" aria-controls="device-picker"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="2" y="3" width="14" height="12" rx="1"/><path d="M6 20h7m-3-5v5"/><rect x="16" y="9" width="6" height="12" rx="1"/></svg></button><button id="toggle-sidebar" class="icon-control" aria-label="Panel de controles" data-tip="Panel de controles" title="Panel de controles" aria-expanded="true" aria-controls="sidebar"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18m-3-13h0m0 4h0"/></svg></button><button id="add-view" class="icon-control" aria-label="Añadir vista" data-tip="Añadir vista" title="Añadir vista" ><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M12 7v10M7 12h10"/></svg></button>
 <details class="zoom-menu"><summary class="icon-control" aria-label="Escala" title="Escala" data-tip="Escala"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="10" cy="10" r="6"/><path d="m15 15 6 6M7 10h6m-3-3v6"/></svg></summary><div class="toolbar-popover"><label for="zoom">Escala de las vistas</label><select id="zoom"><option value="fit">Ajustar</option><option value="0.25">25%</option><option value="0.5">50%</option><option value="0.75">75%</option><option value="1">100%</option><option value="1.25">125%</option></select></div></details>
 <button id="reset" class="icon-control" aria-label="Restablecer vistas" data-tip="Restablecer vistas" title="Restablecer vistas" ><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 4v6h6M3 10a9 9 0 1 1 1 8"/></svg></button><span id="view-count" aria-live="polite"></span></div>
 <details class="toolkit-menu"><summary class="icon-control" aria-label="Navegación del Toolkit" title="Navegación del Toolkit" data-tip="Toolkit"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg></summary><div class="toolbar-popover"><nav class="toolkit-nav" aria-label="Toolkit navigation"><a class="brand" href="./">Webflow Toolkit</a><div><a href="./">SEO Alt Text Generator</a><a href="./image-compressor.html">Image Compressor</a><a href="./code-playground.html">Code Playground</a><a href="./responsive-lab.html" aria-current="page">Responsive Lab</a></div></nav></div></details>
@@ -86,13 +115,23 @@ body:has(#engines-panel:not([hidden])) .lab-toolbar>.breakpoint-toolbar{display:
 <div class="lab-layout"><aside id="sidebar">
 <section><h2>Viewport activo</h2><form id="dimensions"><div class="two"><label>Ancho CSS px<input id="width" type="number" min="240" max="3840" required></label><label>Alto CSS px<input id="height" type="number" min="240" max="3840" required></label></div><button type="submit">Aplicar dimensiones</button><button id="rotate" type="button">Girar orientación</button></form><label class="check"><input id="frame" type="checkbox"> Marco decorativo</label><p class="hint">El marco no emula notch, safe areas ni barras de Safari.</p></section>
 
-<section><h2>Dispositivos</h2><label for="search">Buscar preset</label><input id="search" type="search" placeholder="iPhone, iPad, Android…"><label class="check"><input id="only-favorites" type="checkbox"> Solo favoritos</label><div id="devices"></div><p class="hint">Dimensiones en CSS px. DPR de referencia y User-Agent del dispositivo no se aplican aquí. La resolución física es distinta del viewport.</p></section>
-<section><h2>Personalizados</h2><form id="custom-form"><label for="custom-name">Nombre del viewport activo</label><input id="custom-name" maxlength="60" required placeholder="Landing · laptop"><button type="submit">Guardar preset</button></form><div id="custom-devices"></div></section>
+
+
 <section><button id="clear-data" class="danger">Borrar datos guardados</button><p class="hint">Elimina revisión, favoritos, presets y preferencias de este navegador.</p></section>
 </aside>
 <section id="workspace" tabindex="-1" aria-label="Viewports interactivos"><div id="views"></div></section></div>
 </section>
 <section id="engines-panel" class="panel" hidden><h2>Pruebas entre navegadores</h2><p class="badge">Requiere configuración · ejecución local independiente</p><p>GitHub Pages aloja esta interfaz. El runner de Playwright se ejecuta en tu equipo; exporta la configuración e importa después su informe. No hay un servicio conectado.</p><div class="engine-grid"><article><h3>Chromium · Chrome · Edge</h3><p>Chrome y Edge usan las instalaciones del equipo. El runner informa si faltan.</p></article><article><h3>Firefox · WebKit</h3><p>Binarios de Playwright. WebKit prueba ese motor; no es Safari real ni un iPhone.</p></article><article><h3>Safari en macOS / iOS</h3><p>Validación aparte en un Mac, iPhone o iPad real, o un proveedor compatible. Registra versión, OS y tipo de dispositivo.</p></article></div><div class="actions"><button id="runner-config" class="primary">Exportar configuración del runner</button><label class="button" for="import-result">Importar resultado JSON</label><input id="import-result" type="file" accept=".json,application/json"><a class="button" href="https://github.com/luismgnictech-cloud/Webflow-Toolkit/tree/main/responsive-lab/runner" target="_blank" rel="noopener noreferrer">Instrucciones del runner ↗</a></div><p class="hint">Los resultados importados se muestran como evidencia externa, Las capturas quedan en la carpeta de salida del runner.</p><div id="runner-results" aria-live="polite"></div></section>
 </main>
+<dialog id="device-picker" aria-labelledby="device-picker-title">
+<header class="picker-header"><h2 id="device-picker-title">Dispositivos</h2><button id="close-devices" type="button" aria-label="Cerrar dispositivos" title="Cerrar">×</button></header>
+<div class="picker-top"><h3>DISPOSITIVOS VISIBLES EN LA PESTAÑA</h3><div id="visible-devices"></div><p id="picker-context" class="hint"></p>
+<label class="sr-only" for="search">Buscar preset</label><input id="search" type="search" placeholder="Buscar iPhone, iPad, Android…" autofocus>
+<label class="check"><input id="only-favorites" type="checkbox"> Solo favoritos</label></div>
+<div class="picker-scroll"><div id="devices"></div>
+<section class="picker-custom"><h3>Mis dispositivos personalizados</h3><div id="custom-devices" class="device-grid"></div>
+<details id="custom-editor"><summary>＋ Guardar el viewport activo</summary><form id="custom-form"><label for="custom-name">Nombre del viewport activo</label><input id="custom-name" maxlength="60" required placeholder="Landing · laptop"><button type="submit">Guardar preset</button></form></details></section>
+<p class="hint picker-note">Tamaños CSS de referencia. Elegir un dispositivo cambia las dimensiones; se utiliza el motor actual, sin aplicar el DPR ni el User-Agent del dispositivo.</p></div>
+</dialog>
 <noscript>Activa JavaScript para utilizar Responsive Lab.</noscript>
 </body></html>

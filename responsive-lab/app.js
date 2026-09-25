@@ -18,7 +18,47 @@ const manager=new ViewManager($('views'),{
 function rotate(v){const p=devices.find(d=>d.id===v.presetId);if(p&&v.width===p.width&&v.height===p.height&&p.landscape){v.width=p.landscape.width;v.height=p.landscape.height;}else if(p?.landscape&&v.width===p.landscape.width&&v.height===p.landscape.height){v.width=p.width;v.height=p.height;}else [v.width,v.height]=[v.height,v.width];v.orientation=v.width>v.height?'horizontal':'vertical';}
 function applyPreset(p){const v=current();Object.assign(v,{name:p.name,width:p.width,height:p.height,dpr:p.dpr??null,source:p.source||'Preset personalizado guardado',presetId:p.id,orientation:p.width>p.height?'horizontal':'vertical'});render();}
 function render(){$('url').value=state.url;$('open').href=state.url;$('width').value=current().width;$('height').value=current().height;$('zoom').value=state.zoom;$('frame').checked=!!current().frame;$('sidebar').hidden=!state.sidebar;document.querySelector('.lab-layout').classList.toggle('collapsed',!state.sidebar);$('toggle-sidebar').setAttribute('aria-expanded',String(state.sidebar));$('view-count').textContent=`${state.views.length} / 4 vistas`;$('add-view').disabled=state.views.length===4;manager.render(state);syncBreakpoints();renderDevices();save();}
-function renderDevices(){const q=$('search').value.toLocaleLowerCase(),fav=$('only-favorites').checked;$('devices').replaceChildren();let group='';for(const p of devices){if(!p.name.toLocaleLowerCase().includes(q)&&!p.group.toLocaleLowerCase().includes(q)||fav&&!state.favorites.includes(p.id))continue;if(group!==p.group){group=p.group;$('devices').append(el('h3',{class:'device-group'},group));}const row=el('div',{class:'device-row'}),use=el('button'),txt=el('span',{},p.name);txt.append(el('small',{},`${p.width} × ${p.height} · DPR ${p.dpr}`));use.append(txt);use.onclick=()=>applyPreset(p);const star=el('button',{'aria-label':`Favorito: ${p.name}`,'aria-pressed':String(state.favorites.includes(p.id))},state.favorites.includes(p.id)?'★':'☆');star.onclick=()=>{state.favorites=state.favorites.includes(p.id)?state.favorites.filter(x=>x!==p.id):[...state.favorites,p.id];renderDevices();save();};row.append(use,star);$('devices').append(row);}$('custom-devices').replaceChildren();for(const p of state.custom){const row=el('div',{class:'device-row'}),use=el('button',{},`${p.name} · ${p.width} × ${p.height}`),remove=el('button',{'aria-label':`Eliminar preset ${p.name}`},'×');use.onclick=()=>applyPreset(p);remove.onclick=()=>{state.custom=state.custom.filter(x=>x.id!==p.id);renderDevices();save();};row.append(use,remove);$('custom-devices').append(row);}}
+function deviceCategory(p){
+ if(p.group==='Personalizados')return 'Mis dispositivos personalizados';
+ if(/iPad|Tab|tablet/i.test(p.name))return 'Tabletas';
+ if(p.group.startsWith('Apple')&&!p.name.startsWith('Desktop'))return 'Teléfonos Apple';
+ if(p.group==='Android')return 'Teléfonos Android';
+ return 'Escritorio';
+}
+function deviceShape(p){return el('span',{class:'device-shape '+(deviceCategory(p)==='Tabletas'?'tablet':deviceCategory(p)==='Escritorio'?'desktop':''),'aria-hidden':'true'});}
+function chooseDevice(p){applyPreset(p);$('device-picker').close();}
+function deviceTile(p,custom=false){
+ const tile=el('div',{class:'device-tile'}),selected=current().presetId===p.id;
+ const use=el('button',{class:'device-use',type:'button','aria-label':p.name+' · '+p.width+' × '+p.height+' CSS px','aria-pressed':String(selected)});
+ use.append(deviceShape(p),el('span',{},p.name),el('small',{},p.width+' × '+p.height));use.onclick=()=>chooseDevice(p);
+ const star=el('button',{class:'device-favorite',type:'button','aria-label':'Favorito: '+p.name,'aria-pressed':String(state.favorites.includes(p.id))},state.favorites.includes(p.id)?'★':'☆');
+ star.onclick=()=>{state.favorites=state.favorites.includes(p.id)?state.favorites.filter(x=>x!==p.id):[...state.favorites,p.id];renderDevices();save();[...$('device-picker').querySelectorAll('.device-favorite')].find(b=>b.getAttribute('aria-label')==='Favorito: '+p.name)?.focus();};
+ tile.append(use,star);
+ if(custom){const remove=el('button',{class:'device-remove',type:'button','aria-label':'Eliminar preset '+p.name},'×');remove.style.left='1px';remove.style.right='auto';remove.onclick=()=>{state.custom=state.custom.filter(x=>x.id!==p.id);state.favorites=state.favorites.filter(x=>x!==p.id);renderDevices();save();};tile.append(remove);}
+ return tile;
+}
+function renderDevices(){
+ const q=$('search').value.trim().toLocaleLowerCase(),fav=$('only-favorites').checked;
+ const matches=p=>(p.name+' '+p.group+' '+deviceCategory(p)).toLocaleLowerCase().includes(q)&&(!fav||state.favorites.includes(p.id));
+ $('devices').replaceChildren();
+ for(const category of ['Teléfonos Apple','Teléfonos Android','Tabletas','Escritorio']){
+  const list=devices.filter(p=>deviceCategory(p)===category&&matches(p));if(!list.length)continue;
+  const grid=el('div',{class:'device-grid'});list.forEach(p=>grid.append(deviceTile(p)));$('devices').append(el('h3',{class:'device-group'},category),grid);
+ }
+ $('custom-devices').replaceChildren();state.custom.map(p=>({...p,group:'Personalizados'})).filter(matches).forEach(p=>$('custom-devices').append(deviceTile(p,true)));
+ if(!$('devices').children.length&&!$('custom-devices').children.length)$('devices').append(el('p',{class:'device-empty'},'No hay dispositivos que coincidan con tu búsqueda.'));
+ renderVisibleDevices();
+}
+function renderVisibleDevices(){
+ $('visible-devices').replaceChildren();
+ state.views.forEach((v,i)=>{const button=el('button',{type:'button','aria-label':'Seleccionar vista '+(i+1)+': '+v.name,'aria-pressed':String(i===state.active),title:v.name+' · '+v.width+' × '+v.height});const p=devices.find(p=>p.id===v.presetId)||{name:v.name,group:v.width>=992?'Desktop':'Apple'};button.append(deviceShape(p),el('span',{class:'view-number'},String(i+1)));button.onclick=()=>{state.active=i;render();};$('visible-devices').append(button);});
+ const add=el('button',{class:'picker-add',type:'button','aria-label':'Añadir vista al selector',title:'Añadir vista'},'+');add.disabled=state.views.length>=4;add.onclick=()=>{$('add-view').click();$('search').focus();};$('visible-devices').append(add);
+ $('picker-context').textContent='Vista '+(state.active+1)+' de '+state.views.length+' · Elige un dispositivo para esta vista.';
+}
+$('open-devices').onclick=()=>{renderDevices();$('device-picker').showModal();};
+$('close-devices').onclick=()=>$('device-picker').close();
+$('device-picker').addEventListener('click',e=>{const r=$('device-picker').getBoundingClientRect();if(e.target===$('device-picker')&&(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom))$('device-picker').close();});
+$('device-picker').addEventListener('close',()=>$('open-devices').focus());
 $('url-form').onsubmit=e=>{e.preventDefault();try{state.url=normalizeURL($('url').value);render();message('URL aplicada a todas las vistas. La navegación interna sigue siendo independiente.');}catch(err){message(err.message);}};
 $('reload').onclick=()=>manager.reload();
 $('dimensions').onsubmit=e=>{e.preventDefault();try{applyPreset({name:'Viewport personalizado',width:dimension($('width').value),height:dimension($('height').value,3840)});}catch(err){message(err.message);}};
