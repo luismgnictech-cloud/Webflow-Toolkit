@@ -8,7 +8,7 @@ const config=JSON.parse(await readFile(input,'utf8'));
 const url=new URL(config.url);
 if(config.schema!=='responsive-lab-run/v1'||!['http:','https:'].includes(url.protocol)||url.username||url.password)throw Error('Configuración inválida: URL HTTP(S) sin credenciales.');
 if(!Array.isArray(config.views)||config.views.length<1||config.views.length>4)throw Error('Se requieren entre 1 y 4 vistas.');
-for(const v of config.views){if(!Number.isInteger(v.width)||v.width<240||v.width>3840||!Number.isInteger(v.height)||v.height<240||v.height>2560)throw Error('Dimensiones fuera de límites.');}
+for(const v of config.views){if(!Number.isInteger(v.width)||v.width<240||v.width>3840||!Number.isInteger(v.height)||v.height<240||v.height>3840)throw Error('Dimensiones fuera de límites.');}
 const engines=[...new Set((enginesArg||'chromium,firefox,webkit').split(','))];
 const definitions={chromium:{type:chromium},chrome:{type:chromium,channel:'chrome'},msedge:{type:chromium,channel:'msedge'},firefox:{type:firefox},webkit:{type:webkit}};
 if(engines.some(e=>!definitions[e]))throw Error('Motor desconocido.');
