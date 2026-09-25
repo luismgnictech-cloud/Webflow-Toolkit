@@ -1,0 +1,20 @@
+import {readFile,mkdir,writeFile} from 'node:fs/promises';
+import path from 'node:path';
+import os from 'node:os';
+import {chromium,firefox,webkit} from 'playwright';
+const [, , input, enginesArg, outputArg]=process.argv;
+if(!input){console.error('Uso: node run.mjs config.json [chromium,chrome,msedge,firefox,webkit] [carpeta-salida]');process.exit(1);}
+const config=JSON.parse(await readFile(input,'utf8'));
+const url=new URL(config.url);
+if(config.schema!=='responsive-lab-run/v1'||!['http:','https:'].includes(url.protocol)||url.username||url.password)throw Error('Configuración inválida: URL HTTP(S) sin credenciales.');
+if(!Array.isArray(config.views)||config.views.length<1||config.views.length>4)throw Error('Se requieren entre 1 y 4 vistas.');
+for(const v of config.views){if(!Number.isInteger(v.width)||v.width<240||v.width>3840||!Number.isInteger(v.height)||v.height<240||v.height>2560)throw Error('Dimensiones fuera de límites.');}
+const engines=[...new Set((enginesArg||'chromium,firefox,webkit').split(','))];
+const definitions={chromium:{type:chromium},chrome:{type:chromium,channel:'chrome'},msedge:{type:chromium,channel:'msedge'},firefox:{type:firefox},webkit:{type:webkit}};
+if(engines.some(e=>!definitions[e]))throw Error('Motor desconocido.');
+const output=path.resolve(outputArg||`results-${new Date().toISOString().replace(/[:.]/g,'-')}`);await mkdir(output,{recursive:true});
+const report={schema:'responsive-lab-results/v1',date:new Date().toISOString(),url:url.href,runner:'Playwright 1.58.2',scope:'Navegación, overflow horizontal y captura del viewport. No certifica interacciones ni Safari/iOS.',results:[]};
+for(const engine of engines){const def=definitions[engine];let browser;const environment={browser:engine,version:null,os:`${os.type()} ${os.release()} ${os.arch()}`,deviceType:'emulated-viewport',realDevice:false,deviceScaleFactor:1,isMobile:false,hasTouch:false,userAgent:'default engine UA',webkitIsSafari:false};try{browser=await def.type.launch({headless:true,...(def.channel?{channel:def.channel}:{})});environment.version=browser.version();for(const [index,v] of config.views.entries()){const result={engine,environment:{...environment},date:new Date().toISOString(),viewport:{width:v.width,height:v.height},presetReference:v.name,referenceDPR:v.referenceDPR??null,status:'error',checks:[],observations:[]};let context;try{context=await browser.newContext({viewport:{width:v.width,height:v.height},deviceScaleFactor:1});const page=await context.newPage();page.setDefaultTimeout(15000);page.on('pageerror',e=>result.observations.push({type:'pageerror',message:e.message}));const response=await page.goto(url.href,{waitUntil:'load',timeout:30000});result.finalURL=page.url();result.httpStatus=response?.status()??null;await page.evaluate(async()=>{await Promise.race([document.fonts.ready,new Promise(resolve=>setTimeout(resolve,2000))]);});const measured=await page.evaluate(()=>({innerWidth,innerHeight,scrollWidth:document.documentElement.scrollWidth,clientWidth:document.documentElement.clientWidth,userAgent:navigator.userAgent,title:document.title}));result.environment.userAgent=measured.userAgent;result.measured=measured;result.checks.push({id:'horizontal-overflow',status:measured.scrollWidth>measured.clientWidth?'Problema':'Correcto',assignedBy:`Playwright ${engine} ${environment.version}`,detail:'Medición de scrollWidth/clientWidth en el estado inicial. No cubre menús, modales ni contenido posterior.'});result.screenshot=`${engine}-${index+1}-${v.width}x${v.height}.png`;await page.screenshot({path:path.join(output,result.screenshot),fullPage:false,timeout:15000});result.status=response&&response.status()>=400?'http-error':'completed';}catch(error){result.error=error.message;}finally{await context?.close();}report.results.push(result);}}catch(error){report.results.push({engine,environment,date:new Date().toISOString(),status:'unavailable',error:error.message});}finally{await browser?.close();}}
+await writeFile(path.join(output,'results.json'),JSON.stringify(report,null,2));
+console.log(`Informe y capturas: ${output}`);
+if(report.results.some(r=>r.status!=='completed'))process.exitCode=2;

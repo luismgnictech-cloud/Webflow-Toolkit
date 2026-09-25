@@ -51,3 +51,12 @@ encoding runs in a worker; failure or timeout retains the original/lossless resu
 The locally bundled dependencies are UPNG.js 2.1.0 and pako 1.0.11 from their npm
 packages. Their MIT licenses are included in `vendor`. No TinyPNG API or proprietary
 algorithm is used, and matching TinyPNG file sizes is not guaranteed.
+
+
+## Responsive Lab
+
+Open [`responsive-lab.html`](./responsive-lab.html) for up to four interactive CSS viewports, verified device presets, breakpoint boundaries, orientation, manual resizing, visual zoom, local favorites/custom presets, per-configuration manual QA and JSON/Markdown reports. Existing tools remain independent.
+
+Static previews use the current browser engine. External iframe visibility is not assumed from `load`; blocked/unverifiable pages get help and a direct-open link. Screen capture requires user-selected browser screen sharing support. No proxy, remote DOM access, engine switching or native iOS emulation is claimed.
+
+[Local Playwright runner and real Apple validation instructions](./responsive-lab/runner/README.md). GitHub Pages serves the static interface only; no runner infrastructure is provisioned.

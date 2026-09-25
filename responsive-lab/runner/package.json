@@ -1,0 +1,1 @@
+{"name":"webflow-responsive-lab-runner","version":"1.0.0","private":true,"type":"module","engines":{"node":">=20"},"scripts":{"run":"node run.mjs"},"dependencies":{"playwright":"1.58.2"}}
