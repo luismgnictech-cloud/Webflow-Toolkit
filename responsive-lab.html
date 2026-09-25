@@ -32,6 +32,24 @@ main{max-width:none;padding:0}
 body:has(#engines-panel:not([hidden])) .view-tools{display:none}
 @media(max-width:767px){.lab-toolbar{flex-wrap:wrap;gap:6px;padding:8px}.compact-url{max-width:none;flex:1;min-width:120px}.view-tools{margin-left:auto}.toolbar-group{padding-left:6px}.lab-toolbar .icon-control{flex-basis:36px}.lab-toolbar #view-count{font-size:10px}#responsive-panel{padding:10px}}
 @media(max-width:420px){.lab-toolbar .compact-url{flex-basis:calc(100% - 90px)}.lab-toolbar .view-tools{margin-left:0;flex:1}.lab-toolbar .toolbar-group{gap:2px;padding-left:4px}.lab-toolbar #view-count{margin-left:auto}}
+
+/* Compact breakpoint controls retain real CSS viewport dimensions. */
+.breakpoint-toolbar{display:flex;align-items:center;gap:5px;flex-wrap:wrap;background:#252525;color:#b9b9b9;padding:7px 9px;border:1px solid #363636;border-radius:8px;margin-bottom:14px}
+.breakpoint-icons{display:flex;gap:3px;flex-wrap:wrap}
+.breakpoint-toolbar button,.breakpoint-toolbar summary{display:flex;align-items:center;justify-content:center;min-width:30px;min-height:32px;padding:6px;border:0;border-radius:4px;background:transparent;color:#b9b9b9;cursor:pointer;list-style:none}
+.breakpoint-toolbar summary::-webkit-details-marker{display:none}
+.breakpoint-toolbar button:hover,.breakpoint-toolbar summary:hover{background:#383838;color:#fff}
+.breakpoint-toolbar button[aria-pressed=true]{background:#484848;color:#fff;box-shadow:inset 0 -2px #f4cb42}
+#breakpoint-current{font-size:12px;color:#fff;gap:8px;padding:6px 8px;font-variant-numeric:tabular-nums}
+#breakpoint-current:after{content:'⌄';color:#999}
+.breakpoint-menu{position:relative}
+.breakpoint-popover{position:absolute;top:calc(100% + 10px);left:0;z-index:15;width:245px;max-width:calc(100vw - 40px);background:#292929;border:1px solid #494949;padding:14px;border-radius:8px;box-shadow:0 12px 30px #0004}
+.breakpoint-more .breakpoint-popover{left:auto;right:0}
+.breakpoint-popover label,.breakpoint-popover p{font-size:12px;color:#ddd}
+.breakpoint-popover input,.breakpoint-popover select{width:100%;margin:5px 0 10px;background:#191919;color:#eee;border-color:#555}
+.breakpoint-popover button{border:1px solid #555;font-size:11px}
+#workspace:fullscreen{padding:16px;background:#edf0f5;overflow:auto}
+@media(max-width:480px){.breakpoint-toolbar{gap:2px;padding:5px}.breakpoint-icons{gap:1px}.breakpoint-toolbar button{min-width:27px}.breakpoint-popover{position:fixed;top:140px;left:16px!important;right:auto!important}}
 </style></head>
 <body>
 <a class="skip" href="#workspace">Saltar a las vistas</a>
@@ -52,12 +70,17 @@ body:has(#engines-panel:not([hidden])) .view-tools{display:none}
 <section id="responsive-panel">
 <div class="lab-layout"><aside id="sidebar">
 <section><h2>Viewport activo</h2><form id="dimensions"><div class="two"><label>Ancho CSS px<input id="width" type="number" min="240" max="3840" required></label><label>Alto CSS px<input id="height" type="number" min="240" max="3840" required></label></div><button type="submit">Aplicar dimensiones</button><button id="rotate" type="button">Girar orientación</button></form><label class="check"><input id="frame" type="checkbox"> Marco decorativo</label><p class="hint">El marco no emula notch, safe areas ni barras de Safari.</p></section>
-<section><h2>Breakpoints</h2><div id="breakpoints" class="stack"></div><p class="hint">Accesos a anchos de prueba; no describen las media queries del sitio.</p><details><summary>Comparar ambos lados del límite</summary><div id="boundaries" class="chips"></div></details></section>
+
 <section><h2>Dispositivos</h2><label for="search">Buscar preset</label><input id="search" type="search" placeholder="iPhone, iPad, Android…"><label class="check"><input id="only-favorites" type="checkbox"> Solo favoritos</label><div id="devices"></div><p class="hint">Dimensiones en CSS px. DPR de referencia y User-Agent del dispositivo no se aplican aquí. La resolución física es distinta del viewport.</p></section>
 <section><h2>Personalizados</h2><form id="custom-form"><label for="custom-name">Nombre del viewport activo</label><input id="custom-name" maxlength="60" required placeholder="Landing · laptop"><button type="submit">Guardar preset</button></form><div id="custom-devices"></div></section>
 <section><button id="clear-data" class="danger">Borrar datos guardados</button><p class="hint">Elimina revisión, favoritos, presets y preferencias de este navegador.</p></section>
 </aside>
-<section id="workspace" tabindex="-1" aria-label="Viewports interactivos"><div id="views"></div></section></div>
+<section id="workspace" tabindex="-1" aria-label="Viewports interactivos"><div class="breakpoint-toolbar" role="group" aria-label="Breakpoints">
+<details class="breakpoint-menu"><summary id="breakpoint-current" aria-label="Elegir ancho del viewport">390px</summary><div class="breakpoint-popover"><label for="breakpoint-select">Ancho de prueba</label><select id="breakpoint-select"></select><form id="breakpoint-custom"><label for="breakpoint-width">Ancho personalizado · CSS px</label><input id="breakpoint-width" type="number" min="240" max="3840" required><button type="submit">Aplicar</button></form></div></details>
+<div id="breakpoints" class="breakpoint-icons"></div>
+<details class="breakpoint-menu breakpoint-more"><summary aria-label="Más opciones de breakpoints" title="Más opciones">···</summary><div class="breakpoint-popover"><button id="small-mobile" type="button">Small mobile · 320 CSS px</button><p>Comparar ambos lados del límite</p><div id="boundaries" class="chips"></div></div></details>
+<button id="expand-workspace" type="button" aria-label="Pantalla completa" title="Pantalla completa"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M8 3H3v5m13-5h5v5M3 16v5h5m13-5v5h-5M3 3l6 6m12-6-6 6M3 21l6-6m12 6-6-6"/></svg></button>
+</div><div id="views"></div></section></div>
 </section>
 <section id="engines-panel" class="panel" hidden><h2>Pruebas entre navegadores</h2><p class="badge">Requiere configuración · ejecución local independiente</p><p>GitHub Pages aloja esta interfaz. El runner de Playwright se ejecuta en tu equipo; exporta la configuración e importa después su informe. No hay un servicio conectado.</p><div class="engine-grid"><article><h3>Chromium · Chrome · Edge</h3><p>Chrome y Edge usan las instalaciones del equipo. El runner informa si faltan.</p></article><article><h3>Firefox · WebKit</h3><p>Binarios de Playwright. WebKit prueba ese motor; no es Safari real ni un iPhone.</p></article><article><h3>Safari en macOS / iOS</h3><p>Validación aparte en un Mac, iPhone o iPad real, o un proveedor compatible. Registra versión, OS y tipo de dispositivo.</p></article></div><div class="actions"><button id="runner-config" class="primary">Exportar configuración del runner</button><label class="button" for="import-result">Importar resultado JSON</label><input id="import-result" type="file" accept=".json,application/json"><a class="button" href="https://github.com/luismgnictech-cloud/Webflow-Toolkit/tree/main/responsive-lab/runner" target="_blank" rel="noopener noreferrer">Instrucciones del runner ↗</a></div><p class="hint">Los resultados importados se muestran como evidencia externa, Las capturas quedan en la carpeta de salida del runner.</p><div id="runner-results" aria-live="polite"></div></section>
 </main>
