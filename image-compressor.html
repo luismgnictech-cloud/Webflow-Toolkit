@@ -1,61 +1,76 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#f7f8fa">
-<meta name="description" content="Compress images with adaptive PNG palettes, original formats, and batch ZIP downloads.">
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#f5f7f3"><meta name="description" content="Drop images to compress them locally. Keep their format, compare sizes and download everything in one ZIP.">
 <title>Image Compressor | Webflow Toolkit</title>
 <style>
-:root{font-family:Inter,ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#18212e;background:#f7f8fa;font-synthesis:none}*{box-sizing:border-box}body{margin:0}button,input,select{font:inherit}button{cursor:pointer}.page{max-width:1140px;margin:auto;padding:38px 24px 80px}a{color:#3153c5;text-underline-offset:3px}.nav{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:12px;margin-bottom:55px}.brand{font-weight:800;text-decoration:none;color:#18212e}.links{display:flex;flex-wrap:wrap;gap:18px}.links a{font-size:.9rem}.links a[aria-current=page]{font-weight:750;color:#18212e}.eyebrow{text-transform:uppercase;color:#4760b3;font-size:.78rem;font-weight:800;letter-spacing:.12em}h1{font-size:clamp(2rem,5vw,3.25rem);line-height:1.08;letter-spacing:-.04em;margin:12px 0}header p{max-width:740px;color:#5a6779;line-height:1.6}.panel{border:1px solid #dfe5ef;background:white;border-radius:18px;padding:25px;margin-top:24px;box-shadow:0 8px 35px #18212e07}.drop{border:2px dashed #b8c5e0;border-radius:14px;text-align:center;background:#f7f9fe;padding:42px 15px;transition:background .15s,border-color .15s}.drop.drag{border-color:#3454cc;background:#edf2ff}.drop strong{display:block;font-size:1.16rem}.drop p{color:#5b697a;margin:12px 0 20px;font-size:.9rem}.btn{display:inline-flex;align-items:center;justify-content:center;border:1px solid #cbd5e3;border-radius:10px;padding:11px 15px;background:white;color:#20334c;font-weight:700;line-height:1.3;text-decoration:none}.btn:hover{background:#edf1f9}.btn-primary{border-color:#3454cc;background:#3454cc;color:white}.btn-primary:hover{background:#2948b7}.btn:disabled{opacity:.55;cursor:not-allowed}button:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible,.drop:focus-visible{outline:3px solid #96b4ff;outline-offset:3px}.controls{display:flex;flex-wrap:wrap;gap:18px 28px;align-items:end;margin:22px 0}.control{display:grid;gap:8px;flex:1 1 210px}.control label{font-weight:700;font-size:.88rem}.control select,.control input[type=range]{width:100%}.control select{border-radius:9px;border:1px solid #cbd5e3;padding:10px 12px;background:white;color:#18212e}.hint{color:#5d6b7c;font-size:.84rem;line-height:1.55}.actions{display:flex;flex-wrap:wrap;gap:10px;align-items:center}.status{min-height:1.6em;font-size:.9rem;font-weight:600;color:#4c5b6f;margin:14px 0 0}.status.error{color:#aa303d}.results-heading{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;margin:30px 0 14px}.results-heading h2{margin:0;font-size:1.4rem}.results{display:grid;gap:12px}.result{display:grid;grid-template-columns:76px minmax(0,1fr) auto;gap:15px;align-items:center;border:1px solid #e0e6ee;border-radius:13px;background:white;padding:13px}.thumb{width:76px;height:76px;object-fit:contain;background:#f0f3f7;border-radius:8px}.info{min-width:0}.filename{font-weight:730;overflow-wrap:anywhere}.meta{font-size:.83rem;color:#5a6879;line-height:1.6}.saving{color:#176c4b;font-weight:750}.result .btn{white-space:nowrap}.result .error{color:#a62f3b}.footnote{margin-top:18px;color:#5d6b7c;font-size:.85rem;line-height:1.6}input[type=file]{position:absolute;width:1px;height:1px;opacity:0;overflow:hidden;clip-path:inset(50%)}[hidden]{display:none!important}@media(max-width:650px){.page{padding:22px 14px 55px}.nav{margin-bottom:35px}.panel{padding:16px}.drop{padding:32px 12px}.result{grid-template-columns:60px minmax(0,1fr)}.thumb{width:60px;height:60px}.result>.btn{grid-column:1/-1}.actions .btn{flex:1 1 auto}}
-</style>
-</head>
-<body>
-<main class="page">
+:root{font-family:Inter,ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#26372f;background:#f5f7f3;font-synthesis:none}*{box-sizing:border-box}body{margin:0}button,select{font:inherit}button,a,summary{-webkit-tap-highlight-color:transparent}button,summary{cursor:pointer}a{color:inherit;text-underline-offset:3px}.nav{max-width:1152px;padding:24px;margin:auto;display:flex;align-items:center;justify-content:space-between;gap:22px}.brand{text-decoration:none;font-weight:800;letter-spacing:-.03em}.links{display:flex;flex-wrap:wrap;gap:22px;font-size:13px;color:#6a776f}.links a{text-decoration:none}.links a[aria-current]{color:#245e41;font-weight:700}.page{max-width:860px;padding:28px 24px 70px;margin:auto}header{text-align:center;margin-bottom:26px}h1{font-size:clamp(27px,4vw,38px);letter-spacing:-.045em;margin:0 0 10px}header p{color:#6a776f;font-size:14px;line-height:1.6;margin:0}.upload-shell{background:#244d39;border-radius:20px;padding:14px;box-shadow:0 12px 35px #234e3910}.drop{width:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;min-height:230px;border:2px dashed #a8c3ad88;border-radius:12px;background:radial-gradient(ellipse at top,#42694a66,transparent 70%);color:#fff;padding:30px 20px;cursor:pointer;transition:background .15s,border-color .15s}.drop:hover,.drop.drag{background:#365f44;border-color:#dcebd8}.drop strong{font-size:21px;letter-spacing:-.025em}.drop small{font-size:13px;color:#d1dfd2}.upload-icon{width:48px;height:48px;margin-bottom:2px;stroke:#d8e8bc;fill:none;stroke-width:1.6}.choose-label{font-size:13px;text-decoration:underline;text-underline-offset:4px;color:#e6edda}.settings-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:17px 5px 2px;color:#e0e8dd;font-size:12px}.settings-bar label{display:flex;align-items:center;gap:8px}.settings-bar select{max-width:190px;color:#fff;border:1px solid #6e8b72;border-radius:6px;background:#244d39;padding:6px 9px;font-size:12px}.settings-bar option{background:#fff;color:#26372f}.local-note{text-align:center;color:#728078;font-size:12px;margin:14px 0 20px}.local-note span{padding:0 7px}.status{font-size:13px;line-height:1.5;color:#54735d;margin:14px 0;overflow-wrap:anywhere}.status:empty{display:none}.status.error{color:#a44638}.results-heading{display:flex;align-items:center;justify-content:space-between;gap:14px;margin:28px 0 12px}.results-heading h2{font-size:15px;margin:0}.quiet{border:0;background:none;font-size:12px;color:#69766d;padding:8px}.quiet:hover{color:#273f30}.results{border:1px solid #dfe6db;border-radius:12px;overflow:hidden;background:#fff}.result{display:grid;grid-template-columns:38px minmax(0,1fr) auto;align-items:center;gap:14px;padding:16px 18px;border-bottom:1px solid #edf0e9}.result:last-child{border-bottom:0}.thumb{width:38px;height:38px;object-fit:contain;border-radius:6px;background:#f1f4ee}.file-icon{display:grid;place-items:center;color:#83927e;font-size:19px}.info{min-width:0}.filename{font-size:13px;font-weight:650;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.meta{font-size:12px;color:#778177;line-height:1.55;margin-top:3px;overflow-wrap:anywhere}.saving{color:#387744}.error{color:#a44638}.warning{color:#93661b}.download{color:#386b47;font-size:12px;font-weight:700;text-decoration:none;padding:8px 0 8px 12px;white-space:nowrap}.download:hover{text-decoration:underline}.result.is-error{background:#fffaf7}.result.is-error .info{grid-column:2/-1}.result.is-error .filename{white-space:normal;overflow-wrap:anywhere}.result.is-pending{background:#fafbf8}.batch-footer{display:flex;justify-content:space-between;align-items:center;gap:18px;margin-top:18px}.totals{font-size:13px;font-weight:650;line-height:1.6}.hint{font-size:12px;line-height:1.6;color:#778177;font-weight:400}.btn{display:inline-flex;justify-content:center;align-items:center;border:0;border-radius:8px;background:#427d49;color:white;padding:13px 21px;text-decoration:none;font-size:13px;font-weight:700;white-space:nowrap}.btn:hover{background:#316437}.details{margin-top:26px;padding-top:18px;border-top:1px solid #dde5d8;font-size:12px;color:#778177;line-height:1.7}.details summary{font-weight:600;color:#596b59;width:fit-content}.details p{max-width:720px;margin-bottom:0}button:disabled,select:disabled{opacity:.5;cursor:wait}:focus-visible{outline:3px solid #98b97f;outline-offset:4px}[hidden]{display:none!important}input[type=file]{display:none}@media(max-width:650px){.nav{padding:18px 16px;flex-direction:column;gap:14px;align-items:flex-start}.links{gap:15px;font-size:12px}.page{padding:20px 14px 42px}.drop{min-height:215px;padding:24px 10px}.drop strong{font-size:19px}.settings-bar{flex-wrap:wrap;justify-content:center}.result{padding:13px 12px;gap:10px;grid-template-columns:30px minmax(0,1fr) auto}.thumb{width:30px;height:30px}.batch-footer{flex-direction:column;align-items:stretch}.btn{width:100%}.download{padding-left:2px}.local-note{font-size:11px}.filename{font-size:12px}}
+</style></head><body>
 <nav class="nav" aria-label="Toolkit navigation"><a class="brand" href="./">Webflow Toolkit</a><div class="links"><a href="./">SEO Alt Text Generator</a><a href="./image-compressor.html" aria-current="page">Image Compressor</a><a href="./code-playground.html">Code Playground</a></div></nav>
-<header><span class="eyebrow">Image optimization</span><h1>Image Compressor</h1><p>Compress images in their original format. Use smart compression to reduce file size while prioritizing visual quality, or choose lossless mode for unchanged image data. Files are processed locally in your browser.</p></header>
-<section class="panel" aria-label="Image compression settings">
-<div class="drop" id="drop" tabindex="0" role="button" aria-label="Choose images or drop them here"><strong>Drop your images here</strong><p>Or select images from your device. Multiple files supported.</p><button type="button" class="btn btn-primary" id="choose">Choose Images</button><input id="files" type="file" multiple accept="image/jpeg,image/png,image/webp,image/avif,.jpg,.jpeg,.png,.webp,.avif"></div>
-<div class="controls"><div class="control"><label for="mode">Compression mode</label><select id="mode"><option value="target">Smart · Prioritize visual quality</option><option value="lossless">Lossless · Preserve exact data</option></select><span class="hint">Smart mode adapts PNG colors and uses high-quality JPEG/WebP encoding. It may change pixel values and remove metadata. Format and dimensions stay the same.</span></div><div class="control"><strong>Target size: 385 KB per image</strong><span class="hint">All processed images can be downloaded individually or together, including those above the target. Reaching 385 KB is not guaranteed.</span></div></div>
-<div class="actions"><button type="button" class="btn btn-primary" id="compress" disabled>Compress Images</button><button type="button" class="btn" id="clear">Clear All</button><span class="hint" id="selection">No files selected</span></div>
-<p class="status" id="status" role="status" aria-live="polite"></p>
-<p class="footnote">Lossless mode preserves PNG pixel data and metadata; other formats are retained unchanged. Smart mode uses adaptive PNG palettes with numerical quality checks, or high-quality JPEG/WebP encoding. Animated images and AVIF are retained without lossy re-encoding. Review smart-mode images before use; quality checks do not guarantee identical appearance. Files stay on your device.</p>
-</section>
-<section id="resultsSection" hidden aria-label="Compression results"><div class="results-heading"><h2 id="resultsTitle">Results</h2><span id="totalSavings" class="hint"></span></div><div class="actions" style="margin-bottom:16px"><a id="downloadAll" class="btn btn-primary" hidden download="images-compressed.zip">Download all (ZIP)</a><span class="hint" id="downloadSummary" role="status"></span></div><div class="results" id="results"></div></section>
-</main>
-<script>
+<main class="page"><header><h1>Smaller images. Simple.</h1><p>Drop your images, let us compress them, and download.</p></header>
+<section aria-label="Image compression settings"><div class="upload-shell">
+<button class="drop" id="drop" type="button" aria-label="Choose images or drop them here"><svg class="upload-icon" viewBox="0 0 48 48" aria-hidden="true"><path d="M8 28v12h32V28M24 32V6M14 16 24 6l10 10" stroke-linecap="round" stroke-linejoin="round"/></svg><strong>Drop your images here</strong><small>PNG, JPEG, WebP &amp; AVIF</small><span class="choose-label">or click to browse</span></button>
+<input id="files" type="file" multiple accept="image/jpeg,image/png,image/webp,image/avif,.jpg,.jpeg,.png,.webp,.avif">
+<div class="settings-bar"><label for="mode">Mode <select id="mode"><option value="target">Smart compression</option><option value="lossless">Lossless</option></select></label><span>Target: 385 KB / image</span></div></div>
+<p class="local-note">Original format &amp; dimensions <span>·</span> Files stay on your device</p><p class="status" id="status" role="status" aria-live="polite"></p></section>
+<section id="resultsSection" hidden aria-label="Compression results"><div class="results-heading"><h2 id="resultsTitle">Your images</h2><button type="button" class="quiet" id="clear">Clear all</button></div><div class="results" id="results"></div><div class="batch-footer"><div><div class="totals" id="totalSavings"></div><div class="hint" id="downloadSummary" role="status"></div></div><a id="downloadAll" class="btn" hidden download="images-compressed.zip">Download all (ZIP)</a></div></section>
+<details class="details"><summary>About compression &amp; quality</summary><p>Smart compression prioritizes visual quality but may change pixels and remove metadata. Choose Lossless to preserve exact PNG data; other formats remain unchanged in that mode. Original formats and dimensions are always kept. The 385 KB target is not guaranteed; larger results are marked and remain downloadable. Animated images and AVIF are retained without lossy re-encoding. Review Smart results before use.</p><p>Images are read when selected and kept only for this session. If a file cannot be read, save it locally and select it again. Maximum 64 MB per file and 256 MB per batch.</p></details>
+</main><script>
 "use strict";
 const $=id=>document.getElementById(id);
-const picker=$("files"),drop=$("drop"),compressBtn=$("compress"),status=$("status");
+const picker=$("files"),drop=$("drop"),status=$("status");
 const mimeExt={"image/jpeg":"jpg","image/png":"png","image/webp":"webp","image/avif":"avif"};
 const MAX_IMAGE_BYTES=385000;
-let queue=[],objectUrls=[],running=false,readyDownloads=[];
+let queue=[],objectUrls=[],running=false,readyDownloads=[],generation=0;
 function message(text,error=false){status.textContent=text;status.classList.toggle("error",error)}
-function bytes(n){return n>=1000000?(n/1000000).toFixed(2)+" MB":(n/1000).toFixed(2)+" KB"}
+function bytes(n){return n>=1000000?(n/1000000).toFixed(2)+" MB":(n/1000).toFixed(1)+" KB"}
 function isAllowed(file){return Object.hasOwn(mimeExt,file.type)}
-function resetResults(){objectUrls.forEach(URL.revokeObjectURL);objectUrls=[];readyDownloads=[];$("downloadAll").hidden=true;$("downloadAll").removeAttribute("href");$("downloadSummary").textContent="";$("results").replaceChildren();$("resultsSection").hidden=true}
-function addFiles(files){
- if(running)return;
- const incoming=Array.from(files),accepted=incoming.filter(isAllowed);
- if(accepted.length)resetResults();
- queue.push(...accepted);
- picker.value="";
- compressBtn.disabled=queue.length===0;
- $("selection").textContent=queue.length+" image"+(queue.length===1?"":"s")+" selected";
- if(incoming.length!==accepted.length)message((incoming.length-accepted.length)+" unsupported file(s) skipped. Use JPEG, PNG, WebP or AVIF.",true);
- else message(queue.length?"Ready to compress "+queue.length+" image(s).":"");
+function inferType(file){return file.type||({png:"image/png",jpg:"image/jpeg",jpeg:"image/jpeg",webp:"image/webp",avif:"image/avif"}[file.name.split('.').pop().toLowerCase()]||"")}
+// Read immediately, before clearing the input or awaiting any other file. These bytes
+// are independent of later changes to the source file or its filesystem permissions.
+function captureFile(file){
+ let read;
+ try{read=file.arrayBuffer();}catch(error){return Promise.resolve({error});}
+ return Promise.resolve(read).then(data=>({file:new File([data],file.name,{type:inferType(file),lastModified:file.lastModified})}),error=>({error}));
 }
-$("choose").addEventListener("click",event=>{event.stopPropagation();picker.click()});
-drop.addEventListener("click",event=>{if(event.target===picker||event.target.closest("button"))return;picker.click()});
-drop.addEventListener("keydown",event=>{if(event.target===drop&&(event.key==="Enter"||event.key===" ")){event.preventDefault();picker.click()}});
+function readError(error){
+ if(error?.name==="NotReadableError"||error?.name==="NotFoundError"||error?.name==="SecurityError")return "Cannot read this file. Save it locally, then select it again. It may have changed or become unavailable.";
+ return "This image could not be processed. Select it again or try another image.";
+}
+function invalidateZip(){const all=$("downloadAll");all.hidden=true;const url=all.getAttribute("href");if(url){URL.revokeObjectURL(url);objectUrls=objectUrls.filter(value=>value!==url);}all.removeAttribute("href");}
+function placeholder(entry){
+ const row=document.createElement("article");row.className="result is-pending";
+ const icon=document.createElement("span");icon.className="thumb file-icon";icon.textContent="↑";icon.setAttribute("aria-hidden","true");
+ const info=document.createElement("div");info.className="info";
+ const name=document.createElement("div");name.className="filename";name.textContent=entry.name;name.title=entry.name;
+ const note=document.createElement("div");note.className="meta";note.textContent="Reading image…";
+ info.append(name,note);row.append(icon,info);return row;
+}
+function errorRow(entry,error){const row=placeholder(entry);row.className="result is-error";row.querySelector('.file-icon').textContent="!";const detail=row.querySelector('.meta');detail.className="meta error";detail.textContent=readError(error);return row;}
+function addFiles(files){
+ const incoming=Array.from(files);let skipped=0,limited=0;
+ for(const source of incoming){
+  const type=inferType(source);if(!Object.hasOwn(mimeExt,type)){skipped++;continue;}
+  const previous=queue.find(entry=>entry.name===source.name&&entry.size===source.size&&entry.modified===source.lastModified);
+  if(previous&&previous.state!=="error")continue;
+  if(source.size>64000000||queue.reduce((sum,entry)=>sum+entry.size,0)-(previous?.size||0)+source.size>256000000){limited++;continue;}
+  const entry={name:source.name,size:source.size,modified:source.lastModified,state:"pending",capture:captureFile(source)};
+  entry.row=placeholder(entry);
+  if(previous){queue[queue.indexOf(previous)]=entry;previous.row.replaceWith(entry.row);}else{queue.push(entry);$("results").append(entry.row);}
+ }
+ picker.value="";
+ if(queue.length){$("resultsSection").hidden=false;$("resultsTitle").textContent="Your images ("+queue.length+")";invalidateZip();}
+ if(skipped||limited)message((skipped?skipped+" unsupported file(s). ":"")+(limited?limited+" file(s) exceed the memory limit. Use a smaller batch.":""),true);
+ void processQueue();
+}
+drop.addEventListener("click",()=>picker.click());
 picker.addEventListener("change",()=>addFiles(picker.files));
 drop.addEventListener("dragover",event=>{event.preventDefault();drop.classList.add("drag")});
 drop.addEventListener("dragleave",()=>drop.classList.remove("drag"));
 drop.addEventListener("drop",event=>{event.preventDefault();drop.classList.remove("drag");addFiles(event.dataTransfer.files)});
-
-$("clear").addEventListener("click",()=>{if(running)return;queue=[];picker.value="";compressBtn.disabled=true;$("selection").textContent="No files selected";message("");resetResults()});
-// Recompress the PNG byte stream without decoding, drawing or quantizing pixels.
-// Every non-IDAT chunk is copied verbatim, including color profiles and metadata.
+$("clear").addEventListener("click",()=>{if(running)return;generation++;queue=[];readyDownloads=[];picker.value="";objectUrls.forEach(URL.revokeObjectURL);objectUrls=[];$("results").replaceChildren();$("resultsSection").hidden=true;invalidateZip();message("");});
+$("mode").addEventListener("change",()=>{if(running)return;for(const entry of queue){if(entry.file){entry.state="pending";entry.result=null;const row=placeholder(entry);entry.row.replaceWith(row);entry.row=row;}}invalidateZip();void processQueue();});
 function crc32(data){
  let crc=0xffffffff;
  for(const byte of data){crc^=byte;for(let bit=0;bit<8;bit++)crc=(crc>>>1)^((crc&1)?0xedb88320:0);}
@@ -202,61 +217,53 @@ async function buildZip(entries){
  return new Blob([...localParts,...centralParts,end],{type:"application/zip"});
 }
 function meetsSizeLimit(result){return result.blob.size<=MAX_IMAGE_BYTES;}
-function downloadUrl(blob){const url=URL.createObjectURL(blob);objectUrls.push(url);return url}
-function resultRow(file,result){
+
+function downloadUrl(blob){const url=URL.createObjectURL(blob);objectUrls.push(url);return url;}
+function resultRow(entry,result){
  const row=document.createElement("article");row.className="result";
- const thumb=document.createElement("img");thumb.className="thumb";thumb.alt="Preview of "+file.name;thumb.src=downloadUrl(result.blob);
+ const thumb=document.createElement("img");thumb.className="thumb";thumb.alt="";thumb.src=downloadUrl(result.blob);
  const info=document.createElement("div");info.className="info";
- const name=document.createElement("div");name.className="filename";name.textContent=file.name;
- const details=document.createElement("div");details.className="meta";
- const reduction=file.size?Math.round((1-result.blob.size/file.size)*100):0;
- details.textContent=bytes(file.size)+" → "+bytes(result.blob.size)+(result.width?" · "+result.width+" × "+result.height:"")+" · "+mimeExt[result.type].toUpperCase();
- const saving=document.createElement("div");saving.className="meta "+(reduction>0?"saving":"");
- saving.textContent=result.lossy?result.reason:result.unchanged?result.reason:((100*(1-result.blob.size/file.size)).toFixed(1)+"% smaller · Lossless verified");
- const limit=document.createElement("div");limit.className="meta "+(meetsSizeLimit(result)?"saving":"error");
- limit.textContent=meetsSizeLimit(result)?"Within 385 KB · Ready to download":"Over 385 KB · Download available. Further reduction was limited to protect quality.";
- info.append(name,details,saving,limit);
- const a=document.createElement("a");a.className="btn btn-primary";
- a.href=downloadUrl(result.blob);a.download=file.name;a.textContent="Download";a.setAttribute("aria-label","Download "+file.name);
+ const name=document.createElement("div");name.className="filename";name.textContent=entry.name;name.title=entry.name;
+ const meta=document.createElement("div");meta.className="meta";
+ const saving=entry.size?Math.max(0,(1-result.blob.size/entry.size)*100):0;
+ meta.textContent=bytes(entry.size)+" → "+bytes(result.blob.size)+" · "+(saving?saving.toFixed(1)+"% smaller":"Original retained");
+ const label=document.createElement("div");label.className="meta "+(meetsSizeLimit(result)?"saving":"warning");
+ label.textContent=(result.lossy?"Smart compressed":result.unchanged?"Unchanged":"Lossless")+" · "+(meetsSizeLimit(result)?"Within 385 KB":"Above 385 KB target");
+ if(result.reason)label.title=result.reason;
+ info.append(name,meta,label);
+ const a=document.createElement("a");a.className="download";a.href=downloadUrl(result.blob);a.download=entry.name;a.textContent="Download";a.setAttribute("aria-label","Download "+entry.name);
  row.append(thumb,info,a);return row;
 }
-compressBtn.addEventListener("click",async()=>{
+async function processQueue(){
  if(running||!queue.length)return;
- const targetMode=$("mode").value==="target";$("mode").disabled=true;
- running=true;compressBtn.disabled=true;$("clear").disabled=true;$("choose").disabled=true;
- resetResults();$("resultsSection").hidden=false;
- let saved=0,original=0,finished=0,overLimit=0,failed=0;
+ running=true;$("mode").disabled=true;$("clear").disabled=true;
  try{
-  for(const file of queue){
-   message("Processing "+(finished+1)+" of "+queue.length+": "+file.name);
-   try{
-    const result=await (targetMode?targetOptimize(file):optimize(file));
-    original+=file.size;saved+=result.blob.size;
-    readyDownloads.push({name:file.name,blob:result.blob});if(!meetsSizeLimit(result))overLimit++;
-    $("results").append(resultRow(file,result));
-   }catch(error){
-    failed++;
-    const row=document.createElement("article");row.className="result";
-    const info=document.createElement("div");info.className="info";
-    const name=document.createElement("div");name.className="filename";name.textContent=file.name;
-    const detail=document.createElement("div");detail.className="meta error";detail.textContent=error.message||"Unable to process this image.";
-    info.append(name,detail);row.append(info);$("results").append(row);
+  // New selections join the queue; completed entries are never re-read or reprocessed.
+  while(true){
+   let entry;
+   while((entry=queue.find(item=>item.state==="pending"))){
+    entry.state="processing";message("Compressing "+entry.name+"…");entry.row.querySelector('.meta').textContent="Compressing…";
+    try{
+     if(!entry.file){const captured=await entry.capture;entry.capture=null;if(captured.error)throw captured.error;entry.file=captured.file;}
+     entry.result=await ($("mode").value==="target"?targetOptimize(entry.file):optimize(entry.file));entry.state="done";
+     const row=resultRow(entry,entry.result);entry.row.replaceWith(row);entry.row=row;
+    }catch(error){entry.state="error";const row=errorRow(entry,error);entry.row.replaceWith(row);entry.row=row;}
    }
-   finished++;$("resultsTitle").textContent="Results ("+finished+"/"+queue.length+")";
+   const finished=queue.filter(entry=>entry.state==="done");
+   readyDownloads=finished.map(entry=>({name:entry.name,blob:entry.result.blob}));
+   const original=finished.reduce((sum,entry)=>sum+entry.size,0),saved=finished.reduce((sum,entry)=>sum+entry.result.blob.size,0);
+   const failed=queue.filter(entry=>entry.state==="error").length,over=finished.filter(entry=>!meetsSizeLimit(entry.result)).length;
+   $("totalSavings").textContent=original?bytes(original)+" → "+bytes(saved)+" · "+((1-saved/original)*100).toFixed(1)+"% saved":"No images ready";
+   $("downloadSummary").textContent=finished.length+" ready"+(over?" · "+over+" above 385 KB":"")+(failed?" · "+failed+" could not be read or processed":"");
+   invalidateZip();
+   if(readyDownloads.length){
+    try{const zip=await buildZip(readyDownloads);if(queue.some(entry=>entry.state==="pending"))continue;
+     const all=$("downloadAll");all.href=downloadUrl(zip);all.textContent="Download all (ZIP)";all.hidden=false;
+    }catch(error){$("downloadSummary").textContent+=" · ZIP unavailable; use individual downloads.";}
+   }
+   if(queue.some(entry=>entry.state==="pending"))continue;
+   message(failed?"Some images need attention. Select those files again to retry.":"",failed>0);break;
   }
-  $("totalSavings").textContent=original?("Total: "+bytes(original)+" → "+bytes(saved)+" · "+((1-saved/original)*100).toFixed(2)+"% smaller"):"No images processed";
-  const count=readyDownloads.length;
-  $("downloadSummary").textContent=count+" of "+queue.length+" images ready · "+overLimit+" over 385 KB"+(failed?" · "+failed+" failed":"")+". ZIP includes all processed images, including those over 385 KB.";
-  if(count){
-   message("Preparing ZIP for "+count+" image(s)…");
-   try{
-    const zip=await buildZip(readyDownloads),all=$("downloadAll");
-    all.href=downloadUrl(zip);all.textContent=count===queue.length?"Download all "+count+" images (ZIP)":"Download "+count+" ready images (ZIP)";all.hidden=false;
-   }catch(error){$("downloadSummary").textContent+=" ZIP unavailable: "+error.message+" Individual downloads remain available.";}
-  }
-  message("Finished: "+count+" image(s) available to download. "+overLimit+" over 385 KB."+(targetMode?" Smart mode prioritizes visual quality; review results.":" Quality was preserved.")+(failed?" "+failed+" failed.":""),failed>0);
- }finally{$("mode").disabled=false;running=false;compressBtn.disabled=queue.length===0;$("clear").disabled=false;$("choose").disabled=false;}
-});
-</script>
-</body>
-</html>
+ }finally{running=false;$("mode").disabled=false;$("clear").disabled=false;}
+}
+</script></body></html>
