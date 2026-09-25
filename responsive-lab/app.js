@@ -1,6 +1,6 @@
 import {devices,breakpoints,boundaries} from './catalog.js';
 import {defaults,readState,writeState,clearState,normalizeURL,dimension,newView} from './storage.js';
-import {ViewManager,el} from './views.js';
+import {ViewManager,el} from './views.js?v=toolbar-clean-2';
 import {download} from './reports.js';
 import {runnerConfig,parseResult} from './adapters.js';
 const $=id=>document.getElementById(id);let state=readState(),external=null;
@@ -12,12 +12,12 @@ const manager=new ViewManager($('views'),{
  select(id){state.active=state.views.findIndex(v=>v.id===id);render();},
  rotate(id){rotate(byId(id));render();},
  remove(id){state.views=state.views.filter(v=>v.id!==id);state.active=Math.min(state.active,state.views.length-1);render();},
- resize(id,w,h){const v=byId(id);v.width=w;v.height=h;v.name='Viewport personalizado';v.source='Redimensionamiento manual';v.dpr=null;v.presetId=undefined;v.orientation=w>h?'horizontal':'vertical';state.active=state.views.indexOf(v);manager.render(state);$('width').value=w;$('height').value=h;syncBreakpoints();},
+ resize(id,w,h){const v=byId(id);v.width=w;v.height=h;v.name='Viewport personalizado';v.source='Redimensionamiento manual';v.dpr=null;v.presetId=undefined;v.orientation=w>h?'horizontal':'vertical';state.active=state.views.indexOf(v);manager.render(state);syncBreakpoints();},
  resizeEnd(){render();}
 });
 function rotate(v){const p=devices.find(d=>d.id===v.presetId);if(p&&v.width===p.width&&v.height===p.height&&p.landscape){v.width=p.landscape.width;v.height=p.landscape.height;}else if(p?.landscape&&v.width===p.landscape.width&&v.height===p.landscape.height){v.width=p.width;v.height=p.height;}else [v.width,v.height]=[v.height,v.width];v.orientation=v.width>v.height?'horizontal':'vertical';}
 function applyPreset(p){const v=current();Object.assign(v,{name:p.name,width:p.width,height:p.height,dpr:p.dpr??null,source:p.source||'Preset personalizado guardado',presetId:p.id,orientation:p.width>p.height?'horizontal':'vertical'});render();}
-function render(){$('url').value=state.url;$('open').href=state.url;$('width').value=current().width;$('height').value=current().height;$('zoom').value=state.zoom;$('frame').checked=!!current().frame;$('sidebar').hidden=!state.sidebar;document.querySelector('.lab-layout').classList.toggle('collapsed',!state.sidebar);$('toggle-sidebar').setAttribute('aria-expanded',String(state.sidebar));$('view-count').textContent=`${state.views.length} / 4 vistas`;$('add-view').disabled=state.views.length===4;manager.render(state);syncBreakpoints();renderDevices();save();}
+function render(){$('url').value=state.url;$('open').href=state.url;$('zoom').value=state.zoom;$('view-count').textContent=`${state.views.length} / 4 vistas`;$('add-view').disabled=state.views.length===4;manager.render(state);syncBreakpoints();renderDevices();save();}
 function deviceCategory(p){
  if(p.group==='Personalizados')return 'Mis dispositivos personalizados';
  if(/iPad|Tab|tablet/i.test(p.name))return 'Tabletas';
@@ -61,9 +61,8 @@ $('device-picker').addEventListener('click',e=>{const r=$('device-picker').getBo
 $('device-picker').addEventListener('close',()=>$('open-devices').focus());
 $('url-form').onsubmit=e=>{e.preventDefault();try{state.url=normalizeURL($('url').value);render();message('URL aplicada a todas las vistas. La navegación interna sigue siendo independiente.');}catch(err){message(err.message);}};
 $('reload').onclick=()=>manager.reload();
-$('dimensions').onsubmit=e=>{e.preventDefault();try{applyPreset({name:'Viewport personalizado',width:dimension($('width').value),height:dimension($('height').value,3840)});}catch(err){message(err.message);}};
-$('rotate').onclick=()=>{rotate(current());render();};$('frame').onchange=()=>{current().frame=$('frame').checked;render();};
-$('toggle-sidebar').onclick=()=>{state.sidebar=!state.sidebar;render();};$('zoom').onchange=()=>{state.zoom=$('zoom').value;render();};
+$('rotate').onclick=()=>{rotate(current());render();};
+$('zoom').onchange=()=>{state.zoom=$('zoom').value;render();};
 $('add-view').onclick=()=>{if(state.views.length>=4)return;const v=current(),n=newView(v.width,v.height);Object.assign(n,{name:v.name,dpr:v.dpr,source:v.source,presetId:v.presetId,frame:v.frame});state.views.push(n);state.active=state.views.length-1;render();};
 const svgNS='http://www.w3.org/2000/svg';
 for(const [label,width] of breakpoints){
@@ -77,9 +76,9 @@ for(const [label,width] of breakpoints){
  b.append(svg);b.onclick=()=>applyPreset({name:label,width,height:current().height});$('breakpoints').append(b);
 }
 $('breakpoint-select').append(el('option',{value:'custom'},'Personalizado'));
-function syncBreakpoints(){const w=current().width;$('breakpoint-current').textContent=w+'px';$('breakpoint-width').value=w;$('breakpoint-select').value=breakpoints.some(([,n])=>n===w)?String(w):'custom';$('breakpoints').querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',String(Number(b.dataset.width)===w)));}
+function syncBreakpoints(){const w=current().width;$('breakpoint-current').textContent=w+'px';$('breakpoint-width').value=w;$('breakpoint-height').value=current().height;$('breakpoint-select').value=breakpoints.some(([,n])=>n===w)?String(w):'custom';$('breakpoints').querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',String(Number(b.dataset.width)===w)));}
 $('breakpoint-select').onchange=()=>{const p=breakpoints.find(([,w])=>String(w)===$('breakpoint-select').value);if(p){applyPreset({name:p[0],width:p[1],height:current().height});$('breakpoint-current').parentElement.open=false;}else $('breakpoint-width').focus();};
-$('breakpoint-custom').onsubmit=e=>{e.preventDefault();try{applyPreset({name:'Viewport personalizado',width:dimension($('breakpoint-width').value),height:current().height});$('breakpoint-current').parentElement.open=false;}catch(err){message(err.message);}};
+$('breakpoint-custom').onsubmit=e=>{e.preventDefault();try{applyPreset({name:'Viewport personalizado',width:dimension($('breakpoint-width').value),height:dimension($('breakpoint-height').value,3840)});$('breakpoint-current').parentElement.open=false;}catch(err){message(err.message);}};
 $('small-mobile').onclick=()=>{applyPreset({name:'Small mobile · 320 CSS px',width:320,height:current().height});document.querySelector('.breakpoint-more').open=false;};
 $('expand-workspace').disabled=!document.fullscreenEnabled;
 $('expand-workspace').onclick=async()=>{try{if(document.fullscreenElement)await document.exitFullscreen();else await $('workspace').requestFullscreen();}catch{message('Pantalla completa no disponible en este navegador.');}};
