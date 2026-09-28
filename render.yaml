@@ -1,15 +1,14 @@
 services:
   - type: web
     name: webflow-toolkit-site-qa
-    runtime: node
-    rootDir: site-qa-service
+    runtime: docker
     plan: free
-    buildCommand: npm install && npx playwright install chromium
-    startCommand: npm start
+    dockerfilePath: ./site-qa-service/Dockerfile
+    dockerContext: .
     healthCheckPath: /health
     envVars:
-      - key: NODE_VERSION
-        value: 20
+      - key: NODE_ENV
+        value: production
       - key: ALLOWED_ORIGIN
         value: https://luismgnictech-cloud.github.io
       - key: MAX_PAGES
