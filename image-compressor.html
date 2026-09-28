@@ -26,16 +26,15 @@
 <section aria-label="Image compression settings"><div class="upload-shell">
 <button class="drop" id="drop" type="button" aria-label="Choose images or drop them here"><svg class="upload-icon" viewBox="0 0 48 48" aria-hidden="true"><path d="M8 28v12h32V28M24 32V6M14 16 24 6l10 10" stroke-linecap="round" stroke-linejoin="round"/></svg><strong>Drop your images here</strong><small>PNG, JPEG, WebP &amp; AVIF</small><span class="choose-label">or click to browse</span></button>
 <input id="files" type="file" multiple accept="image/jpeg,image/png,image/webp,image/avif,.jpg,.jpeg,.png,.webp,.avif">
-<div class="settings-bar"><label for="mode">Mode <select id="mode"><option value="target">Smart compression</option><option value="lossless">Lossless</option></select></label><span>Target: 385 KB / image</span></div></div>
+<div class="settings-bar"><label for="mode">Mode <select id="mode"><option value="target">Smart compression</option><option value="lossless">Lossless</option></select></label><span>Best quality / size balance</span></div></div>
 <p class="local-note">Original format &amp; dimensions <span>·</span> Files stay on your device</p><p class="status" id="status" role="status" aria-live="polite"></p></section>
 <section id="resultsSection" hidden aria-label="Compression results"><div class="results-heading"><h2 id="resultsTitle">Your images</h2><button type="button" class="quiet" id="clear">Clear all</button></div><div class="results" id="results"></div><div class="batch-footer"><div><div class="totals" id="totalSavings"></div><div class="hint" id="downloadSummary" role="status"></div></div><a id="downloadAll" class="btn" hidden download="images-compressed.zip">Download all (ZIP)</a></div></section>
-<details class="details"><summary>About compression &amp; quality</summary><p>Smart compression prioritizes visual quality but may change pixels and remove metadata. Choose Lossless to preserve exact PNG data; other formats remain unchanged in that mode. Original formats and dimensions are always kept. The 385 KB target is not guaranteed; larger results are marked and remain downloadable. Animated images and AVIF are retained without lossy re-encoding. Review Smart results before use.</p><p>Images are read when selected and kept only for this session. If a file cannot be read, save it locally and select it again. Maximum 64 MB per file and 256 MB per batch.</p></details>
+<details class="details"><summary>About compression &amp; quality</summary><p>Smart compression prioritizes visual quality but may change pixels and remove metadata. Choose Lossless to preserve exact PNG data; other formats remain unchanged in that mode. Original formats and dimensions are always kept. Smart compression searches multiple quality levels and keeps the smallest result that passes its visual quality checks. Animated images and AVIF are retained without lossy re-encoding. Review Smart results before use.</p><p>Images are read when selected and kept only for this session. If a file cannot be read, save it locally and select it again. Maximum 64 MB per file and 256 MB per batch.</p></details>
 </main><script>
 "use strict";
 const $=id=>document.getElementById(id);
 const picker=$("files"),drop=$("drop"),status=$("status");
 const mimeExt={"image/jpeg":"jpg","image/png":"png","image/webp":"webp","image/avif":"avif"};
-const MAX_IMAGE_BYTES=385000;
 let queue=[],objectUrls=[],running=false,readyDownloads=[],generation=0;
 function message(text,error=false){status.textContent=text;status.classList.toggle("error",error)}
 function bytes(n){return n>=1000000?(n/1000000).toFixed(2)+" MB":(n/1000).toFixed(1)+" KB"}
@@ -163,7 +162,7 @@ function smartPng(pixels,width,height){
   const finish=()=>{clearTimeout(timer);worker.terminate();};
   worker.onmessage=event=>{finish();resolve(event.data);};
   worker.onerror=()=>{finish();reject(new Error('PNG optimizer unavailable.'));};
-  worker.postMessage({pixels:pixels.buffer,width,height,target:MAX_IMAGE_BYTES},[pixels.buffer]);
+  worker.postMessage({pixels:pixels.buffer,width,height},[pixels.buffer]);
  });
 }
 // Never resize or change the output format.
@@ -194,7 +193,6 @@ async function targetOptimize(file){
     // Unsupported encoders may silently return PNG: never accept that conversion.
     if(!blob||blob.type!==file.type)break;
     if(blob.size<best.blob.size)best={blob,type:file.type,width,height,lossy:true,reason:"Quality reduced · Review image quality"};
-    if(meetsSizeLimit(best))break;
    }
   }
   return best;
@@ -230,8 +228,6 @@ async function buildZip(entries){
  ev.setUint32(12,centralSize,true);ev.setUint32(16,offset,true);
  return new Blob([...localParts,...centralParts,end],{type:"application/zip"});
 }
-function meetsSizeLimit(result){return result.blob.size<=MAX_IMAGE_BYTES;}
-
 function downloadUrl(blob){const url=URL.createObjectURL(blob);objectUrls.push(url);return url;}
 function resultRow(entry,result){
  const row=document.createElement("article");row.className="result is-complete";
@@ -275,9 +271,9 @@ async function processQueue(){
    const finished=queue.filter(entry=>entry.state==="done");
    readyDownloads=finished.map(entry=>({name:entry.name,blob:entry.result.blob}));
    const original=finished.reduce((sum,entry)=>sum+entry.size,0),saved=finished.reduce((sum,entry)=>sum+entry.result.blob.size,0);
-   const failed=queue.filter(entry=>entry.state==="error").length,over=finished.filter(entry=>!meetsSizeLimit(entry.result)).length;
+   const failed=queue.filter(entry=>entry.state==="error").length;
    $("totalSavings").textContent=original?bytes(original)+" → "+bytes(saved)+" · "+((1-saved/original)*100).toFixed(1)+"% saved":"No images ready";
-   $("downloadSummary").textContent=finished.length+" ready"+(over?" · "+over+" above 385 KB":"")+(failed?" · "+failed+" could not be read or processed":"");
+   $("downloadSummary").textContent=finished.length+" ready"+(failed?" · "+failed+" could not be read or processed":"");
    invalidateZip();
    if(readyDownloads.length){
     try{const zip=await buildZip(readyDownloads);if(queue.some(entry=>entry.state==="pending"))continue;
