@@ -41,6 +41,11 @@ function message(text,error=false){status.textContent=text;status.classList.togg
 function bytes(n){return n>=1000000?(n/1000000).toFixed(2)+" MB":(n/1000).toFixed(1)+" KB"}
 function isAllowed(file){return Object.hasOwn(mimeExt,file.type)}
 function inferType(file){return file.type||({png:"image/png",jpg:"image/jpeg",jpeg:"image/jpeg",webp:"image/webp",avif:"image/avif"}[file.name.split('.').pop().toLowerCase()]||"")}
+function compressedName(name){
+ const dot=name.lastIndexOf(".");
+ if(dot<=0)return name+"-compressed";
+ return name.slice(0,dot)+"-compressed"+name.slice(dot);
+}
 // Read immediately, before clearing the input or awaiting any other file. These bytes
 // are independent of later changes to the source file or its filesystem permissions.
 function captureFile(file){
@@ -204,7 +209,7 @@ async function targetOptimize(file){
   squoosh.terminate();
  }
 }
-// Store the exact output bytes in a standard ZIP. No image re-encoding.
+// Store the exact final compressed output bytes in a standard ZIP. Never use source files here.
 async function buildZip(entries){
  if(entries.length>65535)throw new Error("Too many images for one ZIP. Use a smaller batch.");
  const localParts=[],centralParts=[],usedNames=new Set();let offset=0,centralSize=0;
@@ -274,15 +279,29 @@ async function processQueue(){
     }catch(error){entry.state="error";const row=errorRow(entry,error);entry.row.replaceWith(row);entry.row=row;}
    }
    const finished=queue.filter(entry=>entry.state==="done");
-   readyDownloads=finished.map(entry=>({name:entry.name,blob:entry.result.blob}));
+   readyDownloads=finished.map(entry=>({
+    name:compressedName(entry.name),
+    blob:entry.result.blob,
+    originalSize:entry.size,
+    compressedSize:entry.result.blob.size
+   }));
    const original=finished.reduce((sum,entry)=>sum+entry.size,0),saved=finished.reduce((sum,entry)=>sum+entry.result.blob.size,0);
    const failed=queue.filter(entry=>entry.state==="error").length;
    $("totalSavings").textContent=original?bytes(original)+" → "+bytes(saved)+" · "+((1-saved/original)*100).toFixed(1)+"% saved":"No images ready";
    $("downloadSummary").textContent=finished.length+" ready"+(failed?" · "+failed+" could not be read or processed":"");
    invalidateZip();
    if(readyDownloads.length){
-    try{const zip=await buildZip(readyDownloads);if(queue.some(entry=>entry.state==="pending"))continue;
-     const all=$("downloadAll");all.href=downloadUrl(zip);all.textContent="Download all (ZIP)";all.hidden=false;
+    try{
+     // Build the archive only from final compressed output blobs.
+     const zip=await buildZip(readyDownloads);
+     if(queue.some(entry=>entry.state==="pending"))continue;
+     const all=$("downloadAll");
+     all.href=downloadUrl(zip);
+     all.textContent="Download all compressed (ZIP)";
+     all.download="images-compressed.zip";
+     all.hidden=false;
+     $("downloadSummary").textContent+=" · ZIP "+bytes(zip.size);
+
     }catch(error){$("downloadSummary").textContent+=" · ZIP unavailable; use individual downloads.";}
    }
    if(queue.some(entry=>entry.state==="pending"))continue;
