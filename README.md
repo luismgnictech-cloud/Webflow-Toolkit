@@ -60,7 +60,3 @@ Open [`responsive-lab.html`](./responsive-lab.html) for up to four interactive C
 Static previews use the current browser engine. External iframe visibility is not assumed from `load`; blocked/unverifiable pages get help and a direct-open link. Screen capture requires user-selected browser screen sharing support. No proxy, remote DOM access, engine switching or native iOS emulation is claimed.
 
 [Local Playwright runner and real Apple validation instructions](./responsive-lab/runner/README.md). GitHub Pages serves the static interface only; no runner infrastructure is provisioned.
-
-## Site QA
-
-Open [site-qa.html](./site-qa.html) for the audit frontend. Unlike the browser-only toolkit utilities, Site QA needs the separate Node/Playwright service in [site-qa-service](./site-qa-service) to inspect rendered DOMs on external sites. See the service README for local setup, deployment variables, security controls, and limitations.
