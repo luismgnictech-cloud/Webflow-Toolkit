@@ -239,7 +239,6 @@ function resultRow(entry,result){
  const badge=document.createElement("span");badge.className="format-badge";badge.textContent=format;
  const original=document.createElement("span");original.textContent=bytes(entry.size);original.title="Original size";
  details.append(badge,original);info.append(name,details);
- if(!meetsSizeLimit(result)){const note=document.createElement("div");note.className="result-note";note.textContent="Above 385 KB target";info.append(note);}
  const stats=document.createElement("div");stats.className="output-stats";
  const saving=entry.size?Math.max(0,(1-result.blob.size/entry.size)*100):0;
  const reduction=document.createElement("div");reduction.className="output-saving";
