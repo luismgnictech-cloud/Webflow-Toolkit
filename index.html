@@ -68,7 +68,7 @@
 </head>
 <body>
   <main class="page">
-    <nav class="toolkit-nav" aria-label="Toolkit navigation"><a class="brand" href="./">Webflow Toolkit</a><div class="toolkit-links"><a href="./" aria-current="page">SEO Alt Text Generator</a><a href="./image-compressor.html">Image Compressor</a><a href="./code-playground.html">Code Playground</a><a href="./responsive-lab.html">Responsive Lab</a></div></nav>
+    <nav class="toolkit-nav" aria-label="Toolkit navigation"><a class="brand" href="./">Webflow Toolkit</a><div class="toolkit-links"><a href="./" aria-current="page">SEO Alt Text Generator</a><a href="./image-compressor.html">Image Compressor</a><a href="./code-playground.html">Code Playground</a><a href="./responsive-lab.html">Responsive Lab</a><a href="./site-qa.html">Site QA</a></div></nav>
     <header>
       <div class="eyebrow">Webflow Toolkit</div>
       <h1>SEO Alt Text Generator</h1>
@@ -258,83 +258,3 @@
     }
     function render() {
       resultsSection.hidden = entries.length === 0;
-      $("resultSummary").textContent = entries.length + " headings generated · " + entries.length + " filenames · " + entries.length + " alt texts. All results are shown below."; 
-      filenameInput.value = entries.map(entry => entry.filename).join("\n");
-      altInput.value = entries.map(entry => entry.alt).join("\n");
-      updateCounter("filename");
-      updateCounter("alt");
-    }
-    function editColumn(kind) {
-      const field = kind === "filename" ? filenameInput : altInput;
-      const lines = field.value.split("\n");
-      if (lines.some(line => line.length > MAX)) {
-        field.value = entries.map(entry => entry[kind]).join("\n");
-        notify(kind === "filename" ? $("filenameMessage") : $("altMessage"), "Each line must be 100 characters or fewer.");
-        return;
-      }
-      // Preserve the correspondence between source headings and the two output columns.
-      if (lines.length !== entries.length) {
-        field.value = entries.map(entry => entry[kind]).join("\n");
-        notify(kind === "filename" ? $("filenameMessage") : $("altMessage"), "Edit an existing line. To add or remove headings, use Image Descriptions above.");
-        return;
-      }
-      lines.forEach((line, index) => { entries[index][kind] = line; });
-      updateCounter(kind);
-    }
-    function generate(showErrors = false, force = false) {
-      const source = descriptionInput.value;
-      const template = templateInput.value;
-      if (!force && source === lastSource && template === lastTemplate) return;
-      lastSource = source;
-      lastTemplate = template;
-      setError("", null);
-      const headings = source.split(/\r?\n/).map(line => line.trim()).filter(Boolean);
-      if (!template.trim() || headings.length === 0) {
-        entries = [];
-        render();
-        if (showErrors) setError(!template.trim() ? "Please enter your template name." : "Please enter an image description.", !template.trim() ? templateInput : descriptionInput);
-        return;
-      }
-      const nameSlug = slug(template);
-      if (!nameSlug) {
-        entries = []; render();
-        setError("Please enter a valid template name.", templateInput);
-        return;
-      }
-      const suffixFileBudget = MAX - (nameSlug + "-webflow-template").length - 1;
-      const suffixAltBudget = MAX - (templateLabel(template) + " Webflow Template").length - 1;
-      if (suffixFileBudget < 1 || suffixAltBudget < 1) {
-        entries = []; render();
-        setError("Your template name is too long. Please shorten it to keep the generated text within 100 characters.", templateInput);
-        return;
-      }
-      const invalid = [];
-      entries = headings.map((heading, index) => {
-        const entry = buildEntry(heading, template);
-        if (!entry) invalid.push(index + 1);
-        return entry;
-      }).filter(Boolean);
-      render();
-      if (invalid.length) setError("Could not generate a description for line(s) " + invalid.join(", ") + ". Please use descriptive words or shorten your template name.", descriptionInput);
-    }
-    templateInput.addEventListener("input", () => generate());
-    descriptionInput.addEventListener("input", () => generate());
-    $("generate").addEventListener("click", () => generate(true, true));
-    $("clearDescription").addEventListener("click", () => {
-      descriptionInput.value = "";
-      generate(false, true);
-      descriptionInput.focus();
-    });
-    $("resetAll").addEventListener("click", () => {
-      templateInput.value = "";
-      descriptionInput.value = "";
-      generate(false, true);
-      templateInput.focus();
-    });
-    filenameInput.addEventListener("input", () => editColumn("filename"));
-    altInput.addEventListener("input", () => editColumn("alt"));
-    $("copyFilename").addEventListener("click", () => copy(filenameInput.value, $("filenameMessage"), "Filenames copied to clipboard!"));
-    $("copyAlt").addEventListener("click", () => copy(altInput.value, $("altMessage"), "Alt texts copied to clipboard!"));
-  </script>
-</body>
-</html>
