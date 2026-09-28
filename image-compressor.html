@@ -26,10 +26,10 @@
 <section aria-label="Image compression settings"><div class="upload-shell">
 <button class="drop" id="drop" type="button" aria-label="Choose images or drop them here"><svg class="upload-icon" viewBox="0 0 48 48" aria-hidden="true"><path d="M8 28v12h32V28M24 32V6M14 16 24 6l10 10" stroke-linecap="round" stroke-linejoin="round"/></svg><strong>Drop your images here</strong><small>PNG, JPEG, WebP &amp; AVIF</small><span class="choose-label">or click to browse</span></button>
 <input id="files" type="file" multiple accept="image/jpeg,image/png,image/webp,image/avif,.jpg,.jpeg,.png,.webp,.avif">
-<div class="settings-bar"><label for="mode">Mode <select id="mode"><option value="target">Smart compression</option><option value="lossless">Lossless</option></select></label><span>Squoosh WASM · local processing</span></div></div>
+<div class="settings-bar"><label for="mode">Mode <select id="mode"><option value="target">Smart compression</option><option value="lossless">Lossless</option></select></label><span>High quality · local WASM</span></div></div>
 <p class="local-note">Original format &amp; dimensions <span>·</span> Files stay on your device</p><p class="status" id="status" role="status" aria-live="polite"></p></section>
 <section id="resultsSection" hidden aria-label="Compression results"><div class="results-heading"><h2 id="resultsTitle">Your images</h2><button type="button" class="quiet" id="clear">Clear all</button></div><div class="results" id="results"></div><div class="batch-footer"><div><div class="totals" id="totalSavings"></div><div class="hint" id="downloadSummary" role="status"></div></div><a id="downloadAll" class="btn" hidden download="images-compressed.zip">Download all (ZIP)</a></div></section>
-<details class="details"><summary>About compression &amp; quality</summary><p>Smart compression uses Squoosh WebAssembly codecs locally in your browser. PNG files use adaptive color quantization plus OxiPNG; JPEG, WebP and AVIF use their dedicated WASM codecs. Choose Lossless to preserve exact PNG data; other formats remain unchanged in that mode. Original formats and dimensions are always kept. Smart compression searches multiple quality levels and keeps the smallest result that passes its visual quality checks. Animated images and AVIF are retained without lossy re-encoding. Review Smart results before use.</p><p>Images are read when selected and kept only for this session. If a file cannot be read, save it locally and select it again. Maximum 64 MB per file and 256 MB per batch.</p></details>
+<details class="details"><summary>About compression &amp; quality</summary><p>Smart compression uses Squoosh WebAssembly codecs locally in your browser. PNG files use a high-quality 256-color palette with full dithering plus OxiPNG to protect gradients and glows; JPEG, WebP and AVIF use their dedicated WASM codecs. Choose Lossless to preserve exact PNG data; other formats remain unchanged in that mode. Original formats and dimensions are always kept. Smart compression searches multiple quality levels and keeps the smallest result that passes its visual quality checks. Animated images and AVIF are retained without lossy re-encoding. Review Smart results before use.</p><p>Images are read when selected and kept only for this session. If a file cannot be read, save it locally and select it again. Maximum 64 MB per file and 256 MB per batch.</p></details>
 </main><script type="module">
 import { Squoosh } from "https://esm.sh/@bit-blazer/squoosh@1.3.0";
 "use strict";
@@ -177,15 +177,12 @@ async function targetOptimize(file){
 
   let blob=null,reason="";
   if(file.type==="image/png"){
-   // Palette quantization is the key step for large 24/32-bit PNG reductions.
-   // Test several palettes and keep the smallest result.
-   let best=null;
-   for(const maxNumColors of [256,192,128,96,64,48,32]){
-    const quantized=await squoosh.quantize(image,{maxNumColors,dither:0.8});
-    const candidate=await squoosh.encodeToBlob(quantized,{codec:"oxipng",options:{level:3,interlace:false}});
-    if(candidate&&(!best||candidate.size<best.blob.size))best={blob:candidate,colors:maxNumColors};
-   }
-   if(best){blob=best.blob;reason:"Squoosh WASM · quantized PNG · "+best.colors+" colors · OxiPNG";}
+   // Preserve gradients and glows: use the largest PNG-8 palette and full dithering.
+   // We deliberately avoid automatically dropping to 128/64/32 colors because that
+   // can create visible posterization on gradients even when the file becomes smaller.
+   const quantized=await squoosh.quantize(image,{maxNumColors:256,dither:1.0});
+   blob=await squoosh.encodeToBlob(quantized,{codec:"oxipng",options:{level:4,interlace:false}});
+   reason="Squoosh WASM · high-quality PNG-8 · 256 colors · full dithering · OxiPNG";
   }else if(file.type==="image/jpeg"){
    blob=await squoosh.encodeToBlob(image,{codec:"mozjpeg",options:{quality:82,progressive:true}});
    reason="Squoosh WASM · MozJPEG quality 82";
