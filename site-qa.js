@@ -7,7 +7,7 @@ const categories=[
 const viewportOptions=[1920,1440,1280,992,991,767,479,375,320];
 let controller=null,lastReport=null,lastConfig=null,serviceConnected=false;
 const endpointInput=$("endpoint");
-endpointInput.value=localStorage.getItem("siteQaEndpoint")||"http://localhost:8787";
+endpointInput.value=localStorage.getItem("siteQaEndpoint")||"";
 categories.forEach(([value,label],i)=>{
  const wrap=document.createElement("label");wrap.className="chip";
  const input=document.createElement("input");input.type="checkbox";input.value=value;input.checked=i<6;
@@ -39,15 +39,15 @@ function endpoint(path=""){return endpointInput.value.trim().replace(/\/+$/,"")+
 async function checkHealth(){
  $("serviceState").textContent="Checking…";$("serviceDot").className="dot";$("serviceHelp").classList.add("hidden");serviceConnected=false;
  const ep=endpoint();
- const mixed=location.protocol==="https:"&&/^http:\/\//i.test(ep);
  try{
-  if(mixed)throw new Error("HTTPS frontend cannot connect to an HTTP audit service.");
+  if(!ep){$("serviceState").textContent="Not configured";$("serviceDot").className="dot bad";$("serviceHelp").classList.remove("hidden");$("serviceHelp").innerHTML='<div class="small"><strong>Audit service not configured.</strong> Enter the HTTPS URL of your deployed Playwright service.</div>';return false;}
+  if(!/^https:\/\//i.test(ep))throw new Error("The audit service endpoint must use HTTPS.");
   const res=await fetch(endpoint("/health"),{signal:AbortSignal.timeout(5000)});
   if(!res.ok)throw Error("HTTP "+res.status);
   const data=await res.json();serviceConnected=true;$("serviceState").textContent="Connected · "+(data.browser||"browser service");$("serviceDot").className="dot ok";
  }catch(error){
   $("serviceState").textContent="Not connected";$("serviceDot").className="dot bad";$("serviceHelp").classList.remove("hidden");
-  $("serviceHelp").innerHTML='<div class="small"><strong>Audit service unavailable.</strong> '+(mixed?'This page is running over HTTPS, so the browser will not connect to an HTTP endpoint such as localhost. Deploy the Playwright service to an HTTPS URL, or run both the frontend and service locally over HTTP.':'Start the Playwright service and verify the Service endpoint. The frontend cannot audit external DOMs without it.')+'</div>';
+  $("serviceHelp").innerHTML='<div class="small"><strong>Audit service unavailable.</strong> Verify the deployed HTTPS service URL, CORS configuration, and service status.</div>';
  }
  return serviceConnected;
 }
@@ -151,11 +151,7 @@ $("start").addEventListener("click",async()=>{
   lastConfig=buildConfig();
   const connected=await checkHealth();
   if(!connected){
-   const ep=endpoint();
-   const mixed=location.protocol==="https:"&&/^http:\/\//i.test(ep);
-   status(mixed
-    ?"Audit cannot start: GitHub Pages is HTTPS, but the audit service is HTTP. Use a deployed HTTPS service endpoint or run the toolkit locally."
-    :"Audit cannot start: the Playwright audit service is not connected. Start or deploy the service, then try again.");
+   status("Audit cannot start: the Playwright audit service is not connected. Enter a deployed HTTPS service endpoint and try again.");
    return;
   }
   runAudit(lastConfig);
