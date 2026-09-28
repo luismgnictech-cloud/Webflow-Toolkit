@@ -185,7 +185,7 @@ async function targetOptimize(file){
    const optimized=await smartPng(pixels,width,height);
    if(optimized.buffer){
     const blob=new Blob([optimized.buffer],{type:file.type});
-    if(blob.size<best.blob.size)best={blob,type:file.type,width,height,lossy:true,reason:"Adaptive palette · Quality checks passed · Review image quality"};
+    if(blob.size<best.blob.size)best={blob,type:file.type,width,height,lossy:true,reason:optimized.reason||"Aggressive palette · Review image quality"};
    }else best={...best,reason:optimized.reason,unchanged:best.unchanged};
   }else{
    for(const quality of [0.95,0.9,0.85,0.8]){
@@ -239,6 +239,7 @@ function resultRow(entry,result){
  const badge=document.createElement("span");badge.className="format-badge";badge.textContent=format;
  const original=document.createElement("span");original.textContent=bytes(entry.size);original.title="Original size";
  details.append(badge,original);info.append(name,details);
+ if(result.reason){const strategy=document.createElement("div");strategy.className="result-note";strategy.textContent=result.reason;info.append(strategy);}
  const stats=document.createElement("div");stats.className="output-stats";
  const saving=entry.size?Math.max(0,(1-result.blob.size/entry.size)*100):0;
  const reduction=document.createElement("div");reduction.className="output-saving";
