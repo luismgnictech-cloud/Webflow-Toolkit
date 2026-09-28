@@ -11,7 +11,7 @@
   document.documentElement.append(host);
 
   const style=document.createElement("style");
-  style.textContent=\`
+  style.textContent=`
     :host{all:initial}*{box-sizing:border-box}
     .panel{pointer-events:auto;position:fixed;top:14px;right:14px;width:min(520px,calc(100vw - 28px));max-height:calc(100vh - 28px);display:flex;flex-direction:column;background:#fff;color:#18212e;border:1px solid #dfe5ee;border-radius:16px;box-shadow:0 20px 70px rgba(18,30,50,.24);overflow:hidden;font:13px/1.45 Inter,ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
     .head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 16px;border-bottom:1px solid #e7ebf1;background:#fbfcfe}.title{font-size:15px;font-weight:800}.sub{font-size:11px;color:#657286;margin-top:2px}.head-actions{display:flex;gap:6px}
@@ -22,7 +22,7 @@
     .finding{border:1px solid #e1e6ed;border-radius:10px;margin-bottom:8px;overflow:hidden}.finding-head{display:flex;align-items:center;gap:7px;padding:9px 10px;background:#fbfcfd}.badge{font-size:9px;font-weight:800;text-transform:uppercase;padding:3px 6px;border-radius:999px;background:#edf1f5}.badge.high{background:#ffe5e8;color:#a52331}.badge.medium{background:#fff0cf;color:#8b5c00}.badge.low{background:#e7f2ff;color:#235d99}.badge.info{background:#edf0f4;color:#536173}.finding-title{font-weight:750;flex:1}.finding-body{padding:9px 10px;border-top:1px solid #edf0f4}.finding-body p{margin:4px 0;color:#526173}.evidence{margin-top:7px;padding:7px;background:#f5f7f9;border-radius:6px;font:10px/1.45 ui-monospace,SFMono-Regular,Consolas,monospace;white-space:pre-wrap;overflow-wrap:anywhere;max-height:150px;overflow:auto}
     .empty{padding:28px 12px;text-align:center;color:#667486}.footer{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;padding:11px 14px;border-top:1px solid #e7ebf1;background:#fbfcfe}.footer .group{display:flex;gap:6px;flex-wrap:wrap}
     @media(max-width:560px){.panel{top:6px;right:6px;width:calc(100vw - 12px);max-height:calc(100vh - 12px)}.summary{grid-template-columns:repeat(2,1fr)}}
-  \`;
+  `;
   shadow.append(style);
 
   const panel=document.createElement("section");
