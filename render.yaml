@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: webflow-toolkit-site-qa
+    runtime: node
+    rootDir: site-qa-service
+    plan: free
+    buildCommand: npm install && npx playwright install chromium
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_VERSION
+        value: 20
+      - key: ALLOWED_ORIGIN
+        value: https://luismgnictech-cloud.github.io
+      - key: MAX_PAGES
+        value: 100
+      - key: MAX_CONCURRENCY
+        value: 2
+      - key: MAX_RUNTIME_MS
+        value: 180000
+      - key: MAX_RESOURCE_BYTES
+        value: 8000000
