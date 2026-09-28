@@ -5,7 +5,7 @@ const categories=[
  ["classes","Client-First"],["links","Links"],["gsap","GSAP"],["performance","Performance"]
 ];
 const viewportOptions=[1920,1440,1280,992,991,767,479,375,320];
-let controller=null,lastReport=null,lastConfig=null;
+let controller=null,lastReport=null,lastConfig=null,serviceConnected=false;
 const endpointInput=$("endpoint");
 endpointInput.value=localStorage.getItem("siteQaEndpoint")||"http://localhost:8787";
 categories.forEach(([value,label],i)=>{
@@ -37,14 +37,19 @@ $("viewports").addEventListener("change",updateCount);
 endpointInput.addEventListener("change",()=>{localStorage.setItem("siteQaEndpoint",endpointInput.value.replace(/\/+$/,""));checkHealth()});
 function endpoint(path=""){return endpointInput.value.trim().replace(/\/+$/,"")+path}
 async function checkHealth(){
- $("serviceState").textContent="Checking…";$("serviceDot").className="dot";$("serviceHelp").classList.add("hidden");
+ $("serviceState").textContent="Checking…";$("serviceDot").className="dot";$("serviceHelp").classList.add("hidden");serviceConnected=false;
+ const ep=endpoint();
+ const mixed=location.protocol==="https:"&&/^http:\/\//i.test(ep);
  try{
+  if(mixed)throw new Error("HTTPS frontend cannot connect to an HTTP audit service.");
   const res=await fetch(endpoint("/health"),{signal:AbortSignal.timeout(5000)});
   if(!res.ok)throw Error("HTTP "+res.status);
-  const data=await res.json();$("serviceState").textContent="Connected · "+(data.browser||"browser service");$("serviceDot").className="dot ok";
+  const data=await res.json();serviceConnected=true;$("serviceState").textContent="Connected · "+(data.browser||"browser service");$("serviceDot").className="dot ok";
  }catch(error){
   $("serviceState").textContent="Not connected";$("serviceDot").className="dot bad";$("serviceHelp").classList.remove("hidden");
+  $("serviceHelp").innerHTML='<div class="small"><strong>Audit service unavailable.</strong> '+(mixed?'This page is running over HTTPS, so the browser will not connect to an HTTP endpoint such as localhost. Deploy the Playwright service to an HTTPS URL, or run both the frontend and service locally over HTTP.':'Start the Playwright service and verify the Service endpoint. The frontend cannot audit external DOMs without it.')+'</div>';
  }
+ return serviceConnected;
 }
 function csvSafe(value){
  let s=String(value??"").replace(/"/g,'""');
@@ -134,10 +139,28 @@ async function runAudit(config){
    }
   }
   refreshFilters();render();
- }catch(error){status(error.name==="AbortError"?"Audit cancelled.":"Audit failed: "+error.message)}
+ }catch(error){
+   if(error.name==="AbortError")status("Audit cancelled.");
+   else if(error instanceof TypeError&&/fetch/i.test(error.message))status("Audit service connection failed. Check the Service endpoint, HTTPS/CORS configuration, and whether the Playwright service is running.");
+   else status("Audit failed: "+error.message);
+ }
  finally{controller=null;setRunning(false)}
 }
-$("start").addEventListener("click",()=>{try{lastConfig=buildConfig();runAudit(lastConfig)}catch(e){status(e.message)}});
+$("start").addEventListener("click",async()=>{
+ try{
+  lastConfig=buildConfig();
+  const connected=await checkHealth();
+  if(!connected){
+   const ep=endpoint();
+   const mixed=location.protocol==="https:"&&/^http:\/\//i.test(ep);
+   status(mixed
+    ?"Audit cannot start: GitHub Pages is HTTPS, but the audit service is HTTP. Use a deployed HTTPS service endpoint or run the toolkit locally."
+    :"Audit cannot start: the Playwright audit service is not connected. Start or deploy the service, then try again.");
+   return;
+  }
+  runAudit(lastConfig);
+ }catch(e){status(e.message)}
+});
 $("rerun").addEventListener("click",()=>lastConfig&&runAudit(lastConfig));
 $("cancel").addEventListener("click",()=>controller?.abort());
 ["filterCategory","filterSeverity","filterViewport"].forEach(id=>$(id).addEventListener("change",render));
