@@ -5,9 +5,8 @@ const categories=[
  ["classes","Client-First"],["links","Links"],["gsap","GSAP"],["performance","Performance"]
 ];
 const viewportOptions=[1920,1440,1280,992,991,767,479,375,320];
-let controller=null,lastReport=null,lastConfig=null,serviceConnected=false;
-const endpointInput=$("endpoint");
-endpointInput.value=localStorage.getItem("siteQaEndpoint")||"";
+let controller=null,lastReport=null,lastConfig=null;
+const SERVICE_ENDPOINT="";
 categories.forEach(([value,label],i)=>{
  const wrap=document.createElement("label");wrap.className="chip";
  const input=document.createElement("input");input.type="checkbox";input.value=value;input.checked=i<6;
@@ -34,22 +33,14 @@ $("mode").addEventListener("change",updateMode);
 $("scope").addEventListener("change",()=>{$("manualWrap").classList.toggle("hidden",$("scope").value!=="manual");updateCount()});
 $("manualUrls").addEventListener("input",updateCount);
 $("viewports").addEventListener("change",updateCount);
-endpointInput.addEventListener("change",()=>{localStorage.setItem("siteQaEndpoint",endpointInput.value.replace(/\/+$/,""));checkHealth()});
-function endpoint(path=""){return endpointInput.value.trim().replace(/\/+$/,"")+path}
 async function checkHealth(){
- $("serviceState").textContent="Checking…";$("serviceDot").className="dot";$("serviceHelp").classList.add("hidden");serviceConnected=false;
- const ep=endpoint();
+ if(!SERVICE_ENDPOINT)return false;
  try{
-  if(!ep){$("serviceState").textContent="Not configured";$("serviceDot").className="dot bad";$("serviceHelp").classList.remove("hidden");$("serviceHelp").innerHTML='<div class="small"><strong>Audit service not configured.</strong> Enter the HTTPS URL of your deployed Playwright service.</div>';return false;}
-  if(!/^https:\/\//i.test(ep))throw new Error("The audit service endpoint must use HTTPS.");
-  const res=await fetch(endpoint("/health"),{signal:AbortSignal.timeout(5000)});
-  if(!res.ok)throw Error("HTTP "+res.status);
-  const data=await res.json();serviceConnected=true;$("serviceState").textContent="Connected · "+(data.browser||"browser service");$("serviceDot").className="dot ok";
- }catch(error){
-  $("serviceState").textContent="Not connected";$("serviceDot").className="dot bad";$("serviceHelp").classList.remove("hidden");
-  $("serviceHelp").innerHTML='<div class="small"><strong>Audit service unavailable.</strong> Verify the deployed HTTPS service URL, CORS configuration, and service status.</div>';
+  const res=await fetch(SERVICE_ENDPOINT.replace(/\/+$/,"")+"/health",{signal:AbortSignal.timeout(5000)});
+  return res.ok;
+ }catch{
+  return false;
  }
- return serviceConnected;
 }
 function csvSafe(value){
  let s=String(value??"").replace(/"/g,'""');
@@ -124,7 +115,7 @@ async function runAudit(config){
  controller=new AbortController();setRunning(true);lastReport={meta:{discovered:0,analyzed:0,skipped:0,failed:0},pages:[],skipped:[],failed:[],config,startedAt:new Date().toISOString()};
  $("report").hidden=false;updateSummary(lastReport.meta);$("results").replaceChildren();status("Connecting to audit service…");
  try{
-  const res=await fetch(endpoint("/audit"),{method:"POST",headers:{"content-type":"application/json","accept":"application/x-ndjson"},body:JSON.stringify(config),signal:controller.signal});
+  const res=await fetch(SERVICE_ENDPOINT.replace(/\\\/+$/,"")+"/audit",{method:"POST",headers:{"content-type":"application/json","accept":"application/x-ndjson"},body:JSON.stringify(config),signal:controller.signal});
   if(!res.ok)throw Error((await res.text())||("HTTP "+res.status));
   const reader=res.body.getReader(),decoder=new TextDecoder();let buffer="";
   while(true){
@@ -151,7 +142,7 @@ $("start").addEventListener("click",async()=>{
   lastConfig=buildConfig();
   const connected=await checkHealth();
   if(!connected){
-   status("Audit cannot start: the Playwright audit service is not connected. Enter a deployed HTTPS service endpoint and try again.");
+   status("Site QA is not connected to the audit engine yet.");
    return;
   }
   runAudit(lastConfig);
@@ -167,4 +158,4 @@ $("exportCsv").addEventListener("click",()=>{
  lastReport.pages.forEach(p=>(p.findings||[]).forEach(f=>rows.push([f.category,f.rule,f.severity,f.classification,p.url,f.viewport||"",f.selector||"",typeof f.evidence==="string"?f.evidence:JSON.stringify(f.evidence||""),f.recommendation||""])));
  download("site-qa-findings.csv","text/csv;charset=utf-8",rows.map(r=>r.map(csvSafe).join(",")).join("\n"));
 });
-checkHealth();updateCount();
+updateCount();
