@@ -22,7 +22,7 @@ function qualityScore(source,output,width,height){
  const globalRmse=Math.sqrt(total/(source.length/4*3));
  const alphaRmse=Math.sqrt(alphaError/(source.length/4));
  for(let i=0;i<sums.length;i++)if(counts[i])maxTile=Math.max(maxTile,Math.sqrt(sums[i]/counts[i]));
- return {globalRmse,alphaRmse,maxTile,ok:globalRmse<=5.5&&alphaRmse<=6&&maxTile<=14};
+ return {globalRmse,alphaRmse,maxTile,ok:globalRmse<=11&&alphaRmse<=14&&maxTile<=30};
 }
 self.onmessage=event=>{
  try{
@@ -31,7 +31,7 @@ self.onmessage=event=>{
   let best=null;
   // Keep searching after reaching a particular file size. The goal is the smallest
   // visually acceptable PNG, not merely crossing a fixed KB threshold.
-  for(const colors of [256,224,192,160,128,112,96,80,64,48,32,24,16]){
+  for(const colors of [256,224,192,160,144,128,112,96,80,64,56,48,40,32,24,16,12,8]){
    const buffer=UPNG.encode([source.slice().buffer],width,height,colors);
    const decoded=UPNG.decode(buffer);
    const output=new Uint8Array(UPNG.toRGBA8(decoded)[0]);
@@ -40,7 +40,7 @@ self.onmessage=event=>{
    if(!quality.ok)continue;
    if(!best||buffer.byteLength<best.buffer.byteLength)best={buffer,colors,quality};
   }
-  if(best)self.postMessage(best,[best.buffer]);
+  if(best)self.postMessage({...best,reason:"Aggressive palette · "+best.colors+" colors · Review image quality"},[best.buffer]);
   else self.postMessage({reason:'Smart compression could not reduce this PNG without exceeding the visual quality threshold.'});
  }catch(error){self.postMessage({reason:'Smart PNG compression could not complete; original or lossless result retained.'});}
 };
