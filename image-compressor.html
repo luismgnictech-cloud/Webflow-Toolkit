@@ -26,11 +26,12 @@
 <section aria-label="Image compression settings"><div class="upload-shell">
 <button class="drop" id="drop" type="button" aria-label="Choose images or drop them here"><svg class="upload-icon" viewBox="0 0 48 48" aria-hidden="true"><path d="M8 28v12h32V28M24 32V6M14 16 24 6l10 10" stroke-linecap="round" stroke-linejoin="round"/></svg><strong>Drop your images here</strong><small>PNG, JPEG, WebP &amp; AVIF</small><span class="choose-label">or click to browse</span></button>
 <input id="files" type="file" multiple accept="image/jpeg,image/png,image/webp,image/avif,.jpg,.jpeg,.png,.webp,.avif">
-<div class="settings-bar"><label for="mode">Mode <select id="mode"><option value="target">Smart compression</option><option value="lossless">Lossless</option></select></label><span>Best quality / size balance</span></div></div>
+<div class="settings-bar"><label for="mode">Mode <select id="mode"><option value="target">Smart compression</option><option value="lossless">Lossless</option></select></label><span>Squoosh WASM · local processing</span></div></div>
 <p class="local-note">Original format &amp; dimensions <span>·</span> Files stay on your device</p><p class="status" id="status" role="status" aria-live="polite"></p></section>
 <section id="resultsSection" hidden aria-label="Compression results"><div class="results-heading"><h2 id="resultsTitle">Your images</h2><button type="button" class="quiet" id="clear">Clear all</button></div><div class="results" id="results"></div><div class="batch-footer"><div><div class="totals" id="totalSavings"></div><div class="hint" id="downloadSummary" role="status"></div></div><a id="downloadAll" class="btn" hidden download="images-compressed.zip">Download all (ZIP)</a></div></section>
-<details class="details"><summary>About compression &amp; quality</summary><p>Smart compression uses adaptive PNG palette quantization and may change pixels, colors, transparency values, and metadata. Choose Lossless to preserve exact PNG data; other formats remain unchanged in that mode. Original formats and dimensions are always kept. Smart compression searches multiple quality levels and keeps the smallest result that passes its visual quality checks. Animated images and AVIF are retained without lossy re-encoding. Review Smart results before use.</p><p>Images are read when selected and kept only for this session. If a file cannot be read, save it locally and select it again. Maximum 64 MB per file and 256 MB per batch.</p></details>
-</main><script>
+<details class="details"><summary>About compression &amp; quality</summary><p>Smart compression uses Squoosh WebAssembly codecs locally in your browser. PNG files use adaptive color quantization plus OxiPNG; JPEG, WebP and AVIF use their dedicated WASM codecs. Choose Lossless to preserve exact PNG data; other formats remain unchanged in that mode. Original formats and dimensions are always kept. Smart compression searches multiple quality levels and keeps the smallest result that passes its visual quality checks. Animated images and AVIF are retained without lossy re-encoding. Review Smart results before use.</p><p>Images are read when selected and kept only for this session. If a file cannot be read, save it locally and select it again. Maximum 64 MB per file and 256 MB per batch.</p></details>
+</main><script type="module">
+import { Squoosh } from "https://esm.sh/@bit-blazer/squoosh@1.3.0";
 "use strict";
 const $=id=>document.getElementById(id);
 const picker=$("files"),drop=$("drop"),status=$("status");
@@ -165,39 +166,46 @@ function smartPng(pixels,width,height){
   worker.postMessage({pixels:pixels.buffer,width,height},[pixels.buffer]);
  });
 }
-// Never resize or change the output format.
+// Smart mode uses Squoosh WebAssembly codecs locally in the browser.
 async function targetOptimize(file){
- const lossless=await optimize(file);
- const data=new Uint8Array(await file.arrayBuffer());
- const marker=new TextDecoder("latin1").decode(data);
- if(file.type==="image/avif"||marker.includes("acTL")||marker.includes("ANIM"))
-  return {...lossless,reason:(lossless.reason||"Lossless result retained.")+" Target encoding unavailable for this format or animation."};
- let bitmap;
+ const fallback=await optimize(file);
+ const squoosh=new Squoosh();
  try{
-  bitmap=await createImageBitmap(file);
-  const width=bitmap.width,height=bitmap.height;
-  if(width*height>16000000)return {...lossless,reason:"Original or lossless result retained: image exceeds safe target-mode processing size."};
-  const canvas=document.createElement("canvas");canvas.width=width;canvas.height=height;
-  const ctx=canvas.getContext("2d",{willReadFrequently:true});ctx.drawImage(bitmap,0,0);
-  let best=lossless;
+  let image=await squoosh.decode(file);
+  const width=image.width,height=image.height;
+  if(width*height>24000000)return {...fallback,reason:"Large image retained with the safe optimizer."};
+
+  let blob=null,reason="";
   if(file.type==="image/png"){
-   const pixels=ctx.getImageData(0,0,width,height).data;
-   const optimized=await smartPng(pixels,width,height);
-   if(optimized.buffer){
-    const blob=new Blob([optimized.buffer],{type:file.type});
-    if(blob.size<best.blob.size)best={blob,type:file.type,width,height,lossy:true,reason:optimized.reason||"Aggressive palette · Review image quality"};
-   }else best={...best,reason:optimized.reason,unchanged:best.unchanged};
-  }else{
-   for(const quality of [0.95,0.9,0.85,0.8]){
-    const blob=await new Promise(resolve=>canvas.toBlob(resolve,file.type,quality));
-    // Unsupported encoders may silently return PNG: never accept that conversion.
-    if(!blob||blob.type!==file.type)break;
-    if(blob.size<best.blob.size)best={blob,type:file.type,width,height,lossy:true,reason:"Quality reduced · Review image quality"};
+   // Palette quantization is the key step for large 24/32-bit PNG reductions.
+   // Test several palettes and keep the smallest result.
+   let best=null;
+   for(const maxNumColors of [256,192,128,96,64,48,32]){
+    const quantized=await squoosh.quantize(image,{maxNumColors,dither:0.8});
+    const candidate=await squoosh.encodeToBlob(quantized,{codec:"oxipng",options:{level:3,interlace:false}});
+    if(candidate&&(!best||candidate.size<best.blob.size))best={blob:candidate,colors:maxNumColors};
    }
+   if(best){blob=best.blob;reason:"Squoosh WASM · quantized PNG · "+best.colors+" colors · OxiPNG";}
+  }else if(file.type==="image/jpeg"){
+   blob=await squoosh.encodeToBlob(image,{codec:"mozjpeg",options:{quality:82,progressive:true}});
+   reason="Squoosh WASM · MozJPEG quality 82";
+  }else if(file.type==="image/webp"){
+   blob=await squoosh.encodeToBlob(image,{codec:"webp",options:{quality:82}});
+   reason="Squoosh WASM · WebP quality 82";
+  }else if(file.type==="image/avif"){
+   blob=await squoosh.encodeToBlob(image,{codec:"avif",options:{quality:50,speed:6}});
+   reason="Squoosh WASM · AVIF quality 50";
   }
-  return best;
- }catch(error){return {...lossless,reason:"Target encoding unavailable; original or lossless result retained."};}
- finally{if(bitmap)bitmap.close();}
+
+  if(!blob)return {...fallback,reason:"Squoosh could not encode this format; safe result retained."};
+  if(blob.size>=fallback.blob.size)return {...fallback,reason:"Squoosh tested; existing result was smaller."};
+
+  return {blob,type:file.type,width,height,lossy:true,reason};
+ }catch(error){
+  return {...fallback,reason:"Squoosh WASM unavailable for this image; safe result retained."};
+ }finally{
+  squoosh.terminate();
+ }
 }
 // Store the exact output bytes in a standard ZIP. No image re-encoding.
 async function buildZip(entries){
