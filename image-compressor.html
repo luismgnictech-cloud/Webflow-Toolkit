@@ -2,7 +2,9 @@
 <html lang="en">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#f5f7f3"><meta name="description" content="Drop images to compress them locally. Keep their format, compare sizes and download everything in one ZIP.">
+<meta name="theme-color" content="#f5f7f3"><link rel="icon" type="image/png" sizes="32x32" href="./assets/favicon-32x32.png">
+<link rel="apple-touch-icon" sizes="180x180" href="./assets/apple-touch-icon.png">
+<meta name="description" content="Drop images to compress them locally. Keep their format, compare sizes and download everything in one ZIP.">
 <title>Image Compressor | Webflow Toolkit</title>
 <style>
 :root{font-family:Inter,ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#26372f;background:#f5f7f3;font-synthesis:none}*{box-sizing:border-box}body{margin:0}button,select{font:inherit}button,a,summary{-webkit-tap-highlight-color:transparent}button,summary{cursor:pointer}a{color:inherit;text-underline-offset:3px}.nav{max-width:1152px;padding:24px;margin:auto;display:flex;align-items:center;justify-content:space-between;gap:22px}.brand{text-decoration:none;font-weight:800;letter-spacing:-.03em}.links{display:flex;flex-wrap:wrap;gap:22px;font-size:13px;color:#6a776f}.links a{text-decoration:none}.links a[aria-current]{color:#245e41;font-weight:700}.page{max-width:860px;padding:28px 24px 70px;margin:auto}header{text-align:center;margin-bottom:26px}h1{font-size:clamp(27px,4vw,38px);letter-spacing:-.045em;margin:0 0 10px}header p{color:#6a776f;font-size:14px;line-height:1.6;margin:0}.upload-shell{background:#244d39;border-radius:20px;padding:14px;box-shadow:0 12px 35px #234e3910}.drop{width:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;min-height:230px;border:2px dashed #a8c3ad88;border-radius:12px;background:radial-gradient(ellipse at top,#42694a66,transparent 70%);color:#fff;padding:30px 20px;cursor:pointer;transition:background .15s,border-color .15s}.drop:hover,.drop.drag{background:#365f44;border-color:#dcebd8}.drop strong{font-size:21px;letter-spacing:-.025em}.drop small{font-size:13px;color:#d1dfd2}.upload-icon{width:48px;height:48px;margin-bottom:2px;stroke:#d8e8bc;fill:none;stroke-width:1.6}.choose-label{font-size:13px;text-decoration:underline;text-underline-offset:4px;color:#e6edda}.settings-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:17px 5px 2px;color:#e0e8dd;font-size:12px}.settings-bar label{display:flex;align-items:center;gap:8px}.settings-bar select{max-width:190px;color:#fff;border:1px solid #6e8b72;border-radius:6px;background:#244d39;padding:6px 9px;font-size:12px}.settings-bar option{background:#fff;color:#26372f}.local-note{text-align:center;color:#728078;font-size:12px;margin:14px 0 20px}.local-note span{padding:0 7px}.status{font-size:13px;line-height:1.5;color:#54735d;margin:14px 0;overflow-wrap:anywhere}.status:empty{display:none}.status.error{color:#a44638}.results-heading{display:flex;align-items:center;justify-content:space-between;gap:14px;margin:28px 0 12px}.results-heading h2{font-size:15px;margin:0}.quiet{border:0;background:none;font-size:12px;color:#69766d;padding:8px}.quiet:hover{color:#273f30}.results{border:1px solid #dfe6db;border-radius:12px;overflow:hidden;background:#fff}.result{display:grid;grid-template-columns:38px minmax(0,1fr) auto;align-items:center;gap:14px;padding:16px 18px;border-bottom:1px solid #edf0e9}.result:last-child{border-bottom:0}.thumb{width:38px;height:38px;object-fit:contain;border-radius:6px;background:#f1f4ee}.file-icon{display:grid;place-items:center;color:#83927e;font-size:19px}.info{min-width:0}.filename{font-size:13px;font-weight:650;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.meta{font-size:12px;color:#778177;line-height:1.55;margin-top:3px;overflow-wrap:anywhere}.saving{color:#387744}.error{color:#a44638}.warning{color:#93661b}.download{color:#386b47;font-size:12px;font-weight:700;text-decoration:none;padding:8px 0 8px 12px;white-space:nowrap}.download:hover{text-decoration:underline}.result.is-error{background:#fffaf7}.result.is-error .info{grid-column:2/-1}.result.is-error .filename{white-space:normal;overflow-wrap:anywhere}.result.is-pending{background:#fafbf8}.batch-footer{display:flex;justify-content:space-between;align-items:center;gap:18px;margin-top:18px}.totals{font-size:13px;font-weight:650;line-height:1.6}.hint{font-size:12px;line-height:1.6;color:#778177;font-weight:400}.btn{display:inline-flex;justify-content:center;align-items:center;border:0;border-radius:8px;background:#427d49;color:white;padding:13px 21px;text-decoration:none;font-size:13px;font-weight:700;white-space:nowrap}.btn:hover{background:#316437}.details{margin-top:26px;padding-top:18px;border-top:1px solid #dde5d8;font-size:12px;color:#778177;line-height:1.7}.details summary{font-weight:600;color:#596b59;width:fit-content}.details p{max-width:720px;margin-bottom:0}button:disabled,select:disabled{opacity:.5;cursor:wait}:focus-visible{outline:3px solid #98b97f;outline-offset:4px}[hidden]{display:none!important}input[type=file]{display:none}@media(max-width:650px){.nav{padding:18px 16px;flex-direction:column;gap:14px;align-items:flex-start}.links{gap:15px;font-size:12px}.page{padding:20px 14px 42px}.drop{min-height:215px;padding:24px 10px}.drop strong{font-size:19px}.settings-bar{flex-wrap:wrap;justify-content:center}.result{padding:13px 12px;gap:10px;grid-template-columns:30px minmax(0,1fr) auto}.thumb{width:30px;height:30px}.batch-footer{flex-direction:column;align-items:stretch}.btn{width:100%}.download{padding-left:2px}.local-note{font-size:11px}.filename{font-size:12px}}
@@ -218,94 +220,3 @@ async function buildZip(entries){
   const dot=clean.lastIndexOf("."),stem=dot>0?clean.slice(0,dot):clean,ext=dot>0?clean.slice(dot):"";
   let filename=clean,index=2;
   while(usedNames.has(filename.toLowerCase()))filename=stem+" ("+(index++)+")"+ext;
-  usedNames.add(filename.toLowerCase());
-  const name=new TextEncoder().encode(filename),checksum=crc32(data);
-  if(name.length>65535||data.length>0xffffffff)throw new Error("A file is too large for this ZIP.");
-  const local=new Uint8Array(30+name.length),lv=new DataView(local.buffer);
-  lv.setUint32(0,0x04034b50,true);lv.setUint16(4,20,true);lv.setUint16(6,0x0800,true);
-  lv.setUint16(12,33,true);lv.setUint32(14,checksum,true);
-  lv.setUint32(18,data.length,true);lv.setUint32(22,data.length,true);lv.setUint16(26,name.length,true);local.set(name,30);
-  const central=new Uint8Array(46+name.length),cv=new DataView(central.buffer);
-  cv.setUint32(0,0x02014b50,true);cv.setUint16(4,20,true);cv.setUint16(6,20,true);cv.setUint16(8,0x0800,true);
-  cv.setUint16(14,33,true);cv.setUint32(16,checksum,true);cv.setUint32(20,data.length,true);cv.setUint32(24,data.length,true);
-  cv.setUint16(28,name.length,true);cv.setUint32(42,offset,true);central.set(name,46);
-  localParts.push(local,data);centralParts.push(central);offset+=local.length+data.length;centralSize+=central.length;
-  if(offset+centralSize>0xffffffff)throw new Error("This ZIP is too large. Use a smaller batch.");
- }
- const end=new Uint8Array(22),ev=new DataView(end.buffer);
- ev.setUint32(0,0x06054b50,true);ev.setUint16(8,entries.length,true);ev.setUint16(10,entries.length,true);
- ev.setUint32(12,centralSize,true);ev.setUint32(16,offset,true);
- return new Blob([...localParts,...centralParts,end],{type:"application/zip"});
-}
-function downloadUrl(blob){const url=URL.createObjectURL(blob);objectUrls.push(url);return url;}
-function resultRow(entry,result){
- const row=document.createElement("article");row.className="result is-complete";
- const thumb=document.createElement("img");thumb.className="thumb";thumb.alt="";thumb.src=downloadUrl(result.blob);
- const info=document.createElement("div");info.className="info";
- const name=document.createElement("div");name.className="filename";name.textContent=entry.name;name.title=entry.name;
- const format=mimeExt[result.type].toUpperCase();
- const details=document.createElement("div");details.className="file-details";
- const badge=document.createElement("span");badge.className="format-badge";badge.textContent=format;
- const original=document.createElement("span");original.textContent=bytes(entry.size);original.title="Original size";
- details.append(badge,original);info.append(name,details);
- if(result.reason){const strategy=document.createElement("div");strategy.className="result-note";strategy.textContent=result.reason;info.append(strategy);}
- const stats=document.createElement("div");stats.className="output-stats";
- const saving=entry.size?Math.max(0,(1-result.blob.size/entry.size)*100):0;
- const reduction=document.createElement("div");reduction.className="output-saving";
- reduction.textContent=saving>=1?"−"+Math.round(saving)+"%":saving>0?"−"+saving.toFixed(1)+"%":"0%";
- reduction.title=result.lossy?"Smart compression · Pixels may change":result.unchanged?"Original retained":"Lossless compression";
- const size=document.createElement("div");size.className="output-size";size.textContent=bytes(result.blob.size);size.title="Compressed size";
- stats.append(reduction,size);
- const link=document.createElement("a");link.className="result-download";link.href=downloadUrl(result.blob);link.download=entry.name;
- link.setAttribute("aria-label","Download "+format+" "+entry.name);link.title="Download "+format;
- const check=document.createElement("span");check.className="download-check";check.textContent="✓";check.setAttribute("aria-hidden","true");
- const label=document.createElement("span");label.textContent=format;
- link.append(check,label);row.append(thumb,info,stats,link);return row;
-}
-async function processQueue(){
- if(running||!queue.length)return;
- running=true;$("mode").disabled=true;$("clear").disabled=true;
- try{
-  // New selections join the queue; completed entries are never re-read or reprocessed.
-  while(true){
-   let entry;
-   while((entry=queue.find(item=>item.state==="pending"))){
-    entry.state="processing";message("Compressing "+entry.name+"…");entry.row.querySelector('.meta').textContent="Compressing…";
-    try{
-     if(!entry.file){const captured=await entry.capture;entry.capture=null;if(captured.error)throw captured.error;entry.file=captured.file;}
-     entry.result=await ($("mode").value==="target"?targetOptimize(entry.file):optimize(entry.file));entry.state="done";
-     const row=resultRow(entry,entry.result);entry.row.replaceWith(row);entry.row=row;
-    }catch(error){entry.state="error";const row=errorRow(entry,error);entry.row.replaceWith(row);entry.row=row;}
-   }
-   const finished=queue.filter(entry=>entry.state==="done");
-   readyDownloads=finished.map(entry=>({
-    name:compressedName(entry.name),
-    blob:entry.result.blob,
-    originalSize:entry.size,
-    compressedSize:entry.result.blob.size
-   }));
-   const original=finished.reduce((sum,entry)=>sum+entry.size,0),saved=finished.reduce((sum,entry)=>sum+entry.result.blob.size,0);
-   const failed=queue.filter(entry=>entry.state==="error").length;
-   $("totalSavings").textContent=original?bytes(original)+" → "+bytes(saved)+" · "+((1-saved/original)*100).toFixed(1)+"% saved":"No images ready";
-   $("downloadSummary").textContent=finished.length+" ready"+(failed?" · "+failed+" could not be read or processed":"");
-   invalidateZip();
-   if(readyDownloads.length){
-    try{
-     // Build the archive only from final compressed output blobs.
-     const zip=await buildZip(readyDownloads);
-     if(queue.some(entry=>entry.state==="pending"))continue;
-     const all=$("downloadAll");
-     all.href=downloadUrl(zip);
-     all.textContent="Download all compressed (ZIP)";
-     all.download="images-compressed.zip";
-     all.hidden=false;
-     $("downloadSummary").textContent+=" · ZIP "+bytes(zip.size);
-
-    }catch(error){$("downloadSummary").textContent+=" · ZIP unavailable; use individual downloads.";}
-   }
-   if(queue.some(entry=>entry.state==="pending"))continue;
-   message(failed?"Some images need attention. Select those files again to retry.":"",failed>0);break;
-  }
- }finally{running=false;$("mode").disabled=false;$("clear").disabled=false;}
-}
-</script></body></html>
