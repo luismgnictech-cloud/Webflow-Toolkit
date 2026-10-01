@@ -1,9 +1,7 @@
 import {devices,breakpoints,boundaries} from './catalog.js';
 import {defaults,readState,writeState,clearState,normalizeURL,dimension,newView} from './storage.js';
 import {ViewManager,el} from './views.js?v=toolbar-clean-2';
-import {download} from './reports.js';
-import {runnerConfig,parseResult} from './adapters.js';
-const $=id=>document.getElementById(id);let state=readState(),external=null;
+const $=id=>document.getElementById(id);let state=readState();
 const message=text=>{$('message').textContent=text;};
 const save=()=>{if(!writeState(state))message('No se pudieron guardar las preferencias en este navegador.');};
 const current=()=>state.views[state.active];
@@ -86,10 +84,6 @@ document.addEventListener('fullscreenchange',()=>{const label=document.fullscree
 for(const [a,b] of boundaries){const button=el('button',{},`${a} / ${b}`);button.onclick=()=>{if(state.views.length>2){message('Deja dos espacios libres para añadir esta pareja (máximo 4 vistas).');return;}state.views.push(newView(a,current().height),newView(b,current().height));state.active=state.views.length-2;render();message(`Añadidas vistas de ${a} y ${b} CSS px.`);};$('boundaries').append(button);}
 $('search').oninput=renderDevices;$('only-favorites').onchange=renderDevices;
 $('custom-form').onsubmit=e=>{e.preventDefault();const name=$('custom-name').value.trim();if(!name)return;if(state.custom.length>=50){message('Máximo 50 presets; elimina uno antes de añadir otro.');return;}state.custom.push({id:crypto.randomUUID(),name,width:current().width,height:current().height,source:'Preset personalizado guardado'});$('custom-name').value='';renderDevices();save();message('Preset guardado.');};
-$('reset').onclick=()=>{if(!confirm('¿Restablecer las vistas? Se mantienen favoritos y presets.'))return;state={...defaults(),favorites:state.favorites,custom:state.custom};external=null;$('runner-results').replaceChildren();render();message('Vistas restablecidas.');};
-$('clear-data').onclick=()=>{if(!confirm('¿Borrar revisión, favoritos, presets y preferencias guardados?'))return;const ok=clearState();state=defaults();external=null;$('runner-results').replaceChildren();$('search').value='';$('only-favorites').checked=false;render();clearState();message(ok?'Datos guardados eliminados.':'El navegador no permite borrar el almacenamiento.');};
-function mode(engine){$('responsive-panel').hidden=engine;$('engines-panel').hidden=!engine;$('responsive-mode').setAttribute('aria-pressed',String(!engine));$('engines-mode').setAttribute('aria-pressed',String(engine));if(!engine)manager.fit();}
-$('responsive-mode').onclick=()=>mode(false);$('engines-mode').onclick=()=>mode(true);
-$('runner-config').onclick=()=>download('responsive-lab-config.json',JSON.stringify(runnerConfig(state),null,2),'application/json');
-$('import-result').onchange=async e=>{try{const file=e.target.files[0];if(!file)return;if(file.size>2000000)throw Error('Máximo 2 MB.');external=parseResult(await file.text());$('runner-results').replaceChildren(el('h3',{},'Informe importado · no es una ejecución en esta página'),el('pre',{},JSON.stringify(external,null,2)));message(`Informe importado: ${external.date}. URL: ${external.url}`);}catch(err){message(err.message);}finally{e.target.value='';}};
+$('reset').onclick=()=>{if(!confirm('¿Restablecer las vistas? Se mantienen favoritos y presets.'))return;state={...defaults(),favorites:state.favorites,custom:state.custom};render();message('Vistas restablecidas.');};
+$('clear-data').onclick=()=>{if(!confirm('¿Borrar revisión, favoritos, presets y preferencias guardados?'))return;const ok=clearState();state=defaults();$('search').value='';$('only-favorites').checked=false;render();clearState();message(ok?'Datos guardados eliminados.':'El navegador no permite borrar el almacenamiento.');};
 render();
