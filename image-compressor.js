@@ -1,4 +1,3 @@
-import { Squoosh } from "https://esm.sh/@bit-blazer/squoosh@1.3.0";
 "use strict";
 let SquooshCtor=null;
 async function getSquoosh(){
