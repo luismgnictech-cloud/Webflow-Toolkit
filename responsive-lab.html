@@ -1,8 +1,6 @@
 <!doctype html>
 <html lang="es">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#f7f8fa"><link rel="icon" type="image/png" sizes="32x32" href="./assets/favicon-32x32.png">
-<link rel="apple-touch-icon" sizes="180x180" href="./assets/apple-touch-icon.png">
-<meta name="description" content="Revisa sitios Webflow en múltiples viewports y dispositivos desde una sola interfaz."><title>Responsive Lab | Webflow Toolkit</title><link rel="stylesheet" href="./responsive-lab/lab.css"><script type="module" src="./responsive-lab/app.js?v=toolbar-clean-2"></script><style>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#f7f8fa">\n<link rel="icon" type="image/png" sizes="32x32" href="./favicon-32x32.png">\n<link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon.png"><meta name="description" content="Revisa sitios Webflow en múltiples viewports y dispositivos desde una sola interfaz."><title>Responsive Lab | Webflow Toolkit</title><link rel="stylesheet" href="./responsive-lab/lab.css"><script type="module" src="./responsive-lab/app.js?v=toolbar-clean-2"></script><style>
 /* Compact toolbar: existing IDs preserve the application actions. */
 .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
 main{max-width:none;padding:0}
@@ -118,3 +116,11 @@ main{max-width:none;padding:0}
 <header class="picker-header"><h2 id="device-picker-title">Dispositivos</h2><button id="close-devices" type="button" aria-label="Cerrar dispositivos" title="Cerrar">×</button></header>
 <div class="picker-top"><h3>DISPOSITIVOS VISIBLES EN LA PESTAÑA</h3><div id="visible-devices"></div><p id="picker-context" class="hint"></p>
 <label class="sr-only" for="search">Buscar preset</label><input id="search" type="search" placeholder="Buscar iPhone, iPad, Android…" autofocus>
+<label class="check"><input id="only-favorites" type="checkbox"> Solo favoritos</label></div>
+<div class="picker-scroll"><div id="devices"></div>
+<section class="picker-custom"><h3>Mis dispositivos personalizados</h3><div id="custom-devices" class="device-grid"></div>
+<details id="custom-editor"><summary>＋ Guardar el viewport activo</summary><form id="custom-form"><label for="custom-name">Nombre del viewport activo</label><input id="custom-name" maxlength="60" required placeholder="Landing · laptop"><button type="submit">Guardar preset</button></form></details></section>
+<p class="hint picker-note">Tamaños CSS de referencia. Elegir un dispositivo cambia las dimensiones; se utiliza el motor actual, sin aplicar el DPR ni el User-Agent del dispositivo.</p></div>
+</dialog>
+<noscript>Activa JavaScript para utilizar Responsive Lab.</noscript>
+</body></html>

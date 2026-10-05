@@ -2,9 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#f5f7f3"><link rel="icon" type="image/png" sizes="32x32" href="./assets/favicon-32x32.png">
-<link rel="apple-touch-icon" sizes="180x180" href="./assets/apple-touch-icon.png">
-<meta name="description" content="Drop images to compress them locally. Keep their format, compare sizes and download everything in one ZIP.">
+<meta name="theme-color" content="#f5f7f3">\n<link rel="icon" type="image/png" sizes="32x32" href="./favicon-32x32.png">\n<link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon.png"><meta name="description" content="Drop images to compress them locally. Keep their format, compare sizes and download everything in one ZIP.">
 <title>Image Compressor | Webflow Toolkit</title>
 <style>
 :root{font-family:Inter,ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#26372f;background:#f5f7f3;font-synthesis:none}*{box-sizing:border-box}body{margin:0}button,select{font:inherit}button,a,summary{-webkit-tap-highlight-color:transparent}button,summary{cursor:pointer}a{color:inherit;text-underline-offset:3px}.nav{max-width:1152px;padding:24px;margin:auto;display:flex;align-items:center;justify-content:space-between;gap:22px}.brand{text-decoration:none;font-weight:800;letter-spacing:-.03em}.links{display:flex;flex-wrap:wrap;gap:22px;font-size:13px;color:#6a776f}.links a{text-decoration:none}.links a[aria-current]{color:#245e41;font-weight:700}.page{max-width:860px;padding:28px 24px 70px;margin:auto}header{text-align:center;margin-bottom:26px}h1{font-size:clamp(27px,4vw,38px);letter-spacing:-.045em;margin:0 0 10px}header p{color:#6a776f;font-size:14px;line-height:1.6;margin:0}.upload-shell{background:#244d39;border-radius:20px;padding:14px;box-shadow:0 12px 35px #234e3910}.drop{width:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;min-height:230px;border:2px dashed #a8c3ad88;border-radius:12px;background:radial-gradient(ellipse at top,#42694a66,transparent 70%);color:#fff;padding:30px 20px;cursor:pointer;transition:background .15s,border-color .15s}.drop:hover,.drop.drag{background:#365f44;border-color:#dcebd8}.drop strong{font-size:21px;letter-spacing:-.025em}.drop small{font-size:13px;color:#d1dfd2}.upload-icon{width:48px;height:48px;margin-bottom:2px;stroke:#d8e8bc;fill:none;stroke-width:1.6}.choose-label{font-size:13px;text-decoration:underline;text-underline-offset:4px;color:#e6edda}.settings-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:17px 5px 2px;color:#e0e8dd;font-size:12px}.settings-bar label{display:flex;align-items:center;gap:8px}.settings-bar select{max-width:190px;color:#fff;border:1px solid #6e8b72;border-radius:6px;background:#244d39;padding:6px 9px;font-size:12px}.settings-bar option{background:#fff;color:#26372f}.local-note{text-align:center;color:#728078;font-size:12px;margin:14px 0 20px}.local-note span{padding:0 7px}.status{font-size:13px;line-height:1.5;color:#54735d;margin:14px 0;overflow-wrap:anywhere}.status:empty{display:none}.status.error{color:#a44638}.results-heading{display:flex;align-items:center;justify-content:space-between;gap:14px;margin:28px 0 12px}.results-heading h2{font-size:15px;margin:0}.quiet{border:0;background:none;font-size:12px;color:#69766d;padding:8px}.quiet:hover{color:#273f30}.results{border:1px solid #dfe6db;border-radius:12px;overflow:hidden;background:#fff}.result{display:grid;grid-template-columns:38px minmax(0,1fr) auto;align-items:center;gap:14px;padding:16px 18px;border-bottom:1px solid #edf0e9}.result:last-child{border-bottom:0}.thumb{width:38px;height:38px;object-fit:contain;border-radius:6px;background:#f1f4ee}.file-icon{display:grid;place-items:center;color:#83927e;font-size:19px}.info{min-width:0}.filename{font-size:13px;font-weight:650;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.meta{font-size:12px;color:#778177;line-height:1.55;margin-top:3px;overflow-wrap:anywhere}.saving{color:#387744}.error{color:#a44638}.warning{color:#93661b}.download{color:#386b47;font-size:12px;font-weight:700;text-decoration:none;padding:8px 0 8px 12px;white-space:nowrap}.download:hover{text-decoration:underline}.result.is-error{background:#fffaf7}.result.is-error .info{grid-column:2/-1}.result.is-error .filename{white-space:normal;overflow-wrap:anywhere}.result.is-pending{background:#fafbf8}.batch-footer{display:flex;justify-content:space-between;align-items:center;gap:18px;margin-top:18px}.totals{font-size:13px;font-weight:650;line-height:1.6}.hint{font-size:12px;line-height:1.6;color:#778177;font-weight:400}.btn{display:inline-flex;justify-content:center;align-items:center;border:0;border-radius:8px;background:#427d49;color:white;padding:13px 21px;text-decoration:none;font-size:13px;font-weight:700;white-space:nowrap}.btn:hover{background:#316437}.details{margin-top:26px;padding-top:18px;border-top:1px solid #dde5d8;font-size:12px;color:#778177;line-height:1.7}.details summary{font-weight:600;color:#596b59;width:fit-content}.details p{max-width:720px;margin-bottom:0}button:disabled,select:disabled{opacity:.5;cursor:wait}:focus-visible{outline:3px solid #98b97f;outline-offset:4px}[hidden]{display:none!important}input[type=file]{display:none}@media(max-width:650px){.nav{padding:18px 16px;flex-direction:column;gap:14px;align-items:flex-start}.links{gap:15px;font-size:12px}.page{padding:20px 14px 42px}.drop{min-height:215px;padding:24px 10px}.drop strong{font-size:19px}.settings-bar{flex-wrap:wrap;justify-content:center}.result{padding:13px 12px;gap:10px;grid-template-columns:30px minmax(0,1fr) auto}.thumb{width:30px;height:30px}.batch-footer{flex-direction:column;align-items:stretch}.btn{width:100%}.download{padding-left:2px}.local-note{font-size:11px}.filename{font-size:12px}}
@@ -23,7 +21,7 @@
 .result-note{font-size:11px;color:#93661b;margin-top:5px}
 @media(max-width:650px){.result.is-complete{grid-template-columns:42px minmax(0,1fr) auto;gap:10px;padding:13px 12px}.is-complete .thumb{width:42px;height:42px}.is-complete .filename{font-size:12px}.result-download{grid-column:3;grid-row:2;min-width:76px;padding:9px 10px}.is-complete .info{grid-column:2;grid-row:1/3}.output-stats{grid-column:3;grid-row:1}.is-complete .thumb{grid-row:1/3}.file-details{gap:5px;font-size:11px}.format-badge{font-size:10px;padding:1px 4px}.output-saving{font-size:13px}.output-size{font-size:11px}}
 </style></head><body>
-<nav class="nav" aria-label="Toolkit navigation"><a class="brand" href="./">Webflow Toolkit</a><div class="links"><a href="./seo-alt-text.html">SEO Alt Text Generator</a><a href="./image-compressor.html" aria-current="page">Image Compressor</a><a href="./code-playground.html">Code Playground</a><a href="./responsive-lab.html">Responsive Lab</a></div></nav>
+<nav class="nav" aria-label="Toolkit navigation"><a class="brand" href="./">Webflow Toolkit</a><div class="links"><a href="./">SEO Alt Text Generator</a><a href="./image-compressor.html" aria-current="page">Image Compressor</a><a href="./code-playground.html">Code Playground</a><a href="./responsive-lab.html">Responsive Lab</a></div></nav>
 <main class="page"><header><h1>Smaller images. Simple.</h1><p>Drop your images, let us compress them, and download.</p></header>
 <section aria-label="Image compression settings"><div class="upload-shell">
 <button class="drop" id="drop" type="button" aria-label="Choose images or drop them here"><svg class="upload-icon" viewBox="0 0 48 48" aria-hidden="true"><path d="M8 28v12h32V28M24 32V6M14 16 24 6l10 10" stroke-linecap="round" stroke-linejoin="round"/></svg><strong>Drop your images here</strong><small>PNG, JPEG, WebP &amp; AVIF</small><span class="choose-label">or click to browse</span></button>
@@ -31,90 +29,4 @@
 <div class="settings-bar"><label for="mode">Mode <select id="mode"><option value="target">Smart compression</option><option value="lossless">Lossless</option></select></label><span>High quality · local WASM</span></div></div>
 <p class="local-note">Original format &amp; dimensions <span>·</span> Files stay on your device</p><p class="status" id="status" role="status" aria-live="polite"></p></section>
 <section id="resultsSection" hidden aria-label="Compression results"><div class="results-heading"><h2 id="resultsTitle">Your images</h2><button type="button" class="quiet" id="clear">Clear all</button></div><div class="results" id="results"></div><div class="batch-footer"><div><div class="totals" id="totalSavings"></div><div class="hint" id="downloadSummary" role="status"></div></div><a id="downloadAll" class="btn" hidden download="images-compressed.zip">Download all (ZIP)</a></div></section>
-</main><script type="module">
-import { Squoosh } from "https://esm.sh/@bit-blazer/squoosh@1.3.0";
-"use strict";
-const $=id=>document.getElementById(id);
-const picker=$("files"),drop=$("drop"),status=$("status");
-const mimeExt={"image/jpeg":"jpg","image/png":"png","image/webp":"webp","image/avif":"avif"};
-let queue=[],objectUrls=[],running=false,readyDownloads=[],generation=0;
-function message(text,error=false){status.textContent=text;status.classList.toggle("error",error)}
-function bytes(n){return n>=1000000?(n/1000000).toFixed(2)+" MB":(n/1000).toFixed(1)+" KB"}
-function isAllowed(file){return Object.hasOwn(mimeExt,file.type)}
-function inferType(file){return file.type||({png:"image/png",jpg:"image/jpeg",jpeg:"image/jpeg",webp:"image/webp",avif:"image/avif"}[file.name.split('.').pop().toLowerCase()]||"")}
-function compressedName(name){
- const dot=name.lastIndexOf(".");
- if(dot<=0)return name+"-compressed";
- return name.slice(0,dot)+"-compressed"+name.slice(dot);
-}
-// Read immediately, before clearing the input or awaiting any other file. These bytes
-// are independent of later changes to the source file or its filesystem permissions.
-function captureFile(file){
- let read;
- try{read=file.arrayBuffer();}catch(error){return Promise.resolve({error});}
- return Promise.resolve(read).then(data=>({file:new File([data],file.name,{type:inferType(file),lastModified:file.lastModified})}),error=>({error}));
-}
-function readError(error){
- if(error?.name==="NotReadableError"||error?.name==="NotFoundError"||error?.name==="SecurityError")return "Cannot read this file. Save it locally, then select it again. It may have changed or become unavailable.";
- return "This image could not be processed. Select it again or try another image.";
-}
-function invalidateZip(){const all=$("downloadAll");all.hidden=true;const url=all.getAttribute("href");if(url){URL.revokeObjectURL(url);objectUrls=objectUrls.filter(value=>value!==url);}all.removeAttribute("href");}
-function placeholder(entry){
- const row=document.createElement("article");row.className="result is-pending";
- const icon=document.createElement("span");icon.className="thumb file-icon";icon.textContent="↑";icon.setAttribute("aria-hidden","true");
- const info=document.createElement("div");info.className="info";
- const name=document.createElement("div");name.className="filename";name.textContent=entry.name;name.title=entry.name;
- const note=document.createElement("div");note.className="meta";note.textContent="Reading image…";
- info.append(name,note);row.append(icon,info);return row;
-}
-function errorRow(entry,error){const row=placeholder(entry);row.className="result is-error";row.querySelector('.file-icon').textContent="!";const detail=row.querySelector('.meta');detail.className="meta error";detail.textContent=readError(error);return row;}
-function addFiles(files){
- const incoming=Array.from(files);let skipped=0,limited=0;
- for(const source of incoming){
-  const type=inferType(source);if(!Object.hasOwn(mimeExt,type)){skipped++;continue;}
-  const previous=queue.find(entry=>entry.name===source.name&&entry.size===source.size&&entry.modified===source.lastModified);
-  if(previous&&previous.state!=="error")continue;
-  if(source.size>64000000||queue.reduce((sum,entry)=>sum+entry.size,0)-(previous?.size||0)+source.size>256000000){limited++;continue;}
-  const entry={name:source.name,size:source.size,modified:source.lastModified,state:"pending",capture:captureFile(source)};
-  entry.row=placeholder(entry);
-  if(previous){queue[queue.indexOf(previous)]=entry;previous.row.replaceWith(entry.row);}else{queue.push(entry);$("results").append(entry.row);}
- }
- picker.value="";
- if(queue.length){$("resultsSection").hidden=false;$("resultsTitle").textContent="Your images ("+queue.length+")";invalidateZip();}
- if(skipped||limited)message((skipped?skipped+" unsupported file(s). ":"")+(limited?limited+" file(s) exceed the memory limit. Use a smaller batch.":""),true);
- void processQueue();
-}
-drop.addEventListener("click",()=>picker.click());
-picker.addEventListener("change",()=>addFiles(picker.files));
-drop.addEventListener("dragover",event=>{event.preventDefault();drop.classList.add("drag")});
-drop.addEventListener("dragleave",()=>drop.classList.remove("drag"));
-drop.addEventListener("drop",event=>{event.preventDefault();drop.classList.remove("drag");addFiles(event.dataTransfer.files)});
-$("clear").addEventListener("click",()=>{if(running)return;generation++;queue=[];readyDownloads=[];picker.value="";objectUrls.forEach(URL.revokeObjectURL);objectUrls=[];$("results").replaceChildren();$("resultsSection").hidden=true;invalidateZip();message("");});
-$("mode").addEventListener("change",()=>{if(running)return;for(const entry of queue){if(entry.file){entry.state="pending";entry.result=null;const row=placeholder(entry);entry.row.replaceWith(row);entry.row=row;}}invalidateZip();void processQueue();});
-function crc32(data){
- let crc=0xffffffff;
- for(const byte of data){crc^=byte;for(let bit=0;bit<8;bit++)crc=(crc>>>1)^((crc&1)?0xedb88320:0);}
- return (crc^0xffffffff)>>>0;
-}
-function pngChunk(type,data){
- const out=new Uint8Array(data.length+12),view=new DataView(out.buffer);
- view.setUint32(0,data.length);out.set(new TextEncoder().encode(type),4);out.set(data,8);
- view.setUint32(data.length+8,crc32(out.subarray(4,data.length+8)));return out;
-}
-async function transformBytes(data,stream){
- return new Uint8Array(await new Response(new Blob([data]).stream().pipeThrough(stream)).arrayBuffer());
-}
-function sameBytes(a,b){return a.length===b.length&&a.every((value,i)=>value===b[i]);}
-async function optimizePng(file){
- const bytes=new Uint8Array(await file.arrayBuffer());
- const signature=new Uint8Array([137,80,78,71,13,10,26,10]);
- if(!sameBytes(bytes.subarray(0,8),signature))throw new Error("Invalid PNG signature.");
- const chunks=[],idats=[];let offset=8,width=0,height=0,ended=false,seenIdat=false,closedIdat=false,animated=false;
- const view=new DataView(bytes.buffer);
- while(offset<bytes.length){
-  if(offset+12>bytes.length)throw new Error("Incomplete PNG chunk.");
-  const size=view.getUint32(offset),end=offset+12+size;
-  if(end>bytes.length)throw new Error("Incomplete PNG data.");
-  const type=String.fromCharCode(...bytes.subarray(offset+4,offset+8));
-  if(crc32(bytes.subarray(offset+4,end-4))!==view.getUint32(end-4))throw new Error("Invalid PNG checksum.");
-  if(chunks.length===0){
+</main><script type="module" src="./image-compressor.js?v=20261005"></script></body></html>
