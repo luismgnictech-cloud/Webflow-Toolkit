@@ -9,6 +9,7 @@ const MIME_JSON="application/json";
 const MAX_API_REQUESTS_PER_SESSION=1000;
 const SESSION_TOKEN_KEY="wtPromptDriveToken";
 const SESSION_EXPIRY_KEY="wtPromptDriveTokenExpiry";
+const DRIVE_AUTHORIZED_KEY="wtPromptDriveAuthorized";
 const CATEGORIES=["Webflow","Figma","Framer","HTML","CSS","JavaScript","Ocio","General"];
 const $=id=>document.getElementById(id);
 
@@ -48,6 +49,15 @@ function clearSessionToken(){
   sessionStorage.removeItem(SESSION_TOKEN_KEY);
   sessionStorage.removeItem(SESSION_EXPIRY_KEY);
  }catch{}
+}
+function rememberDriveAuthorization(){
+ try{localStorage.setItem(DRIVE_AUTHORIZED_KEY,"1")}catch{}
+}
+function clearDriveAuthorization(){
+ try{localStorage.removeItem(DRIVE_AUTHORIZED_KEY)}catch{}
+}
+function wasDriveAuthorized(){
+ try{return localStorage.getItem(DRIVE_AUTHORIZED_KEY)==="1"}catch{return false}
 }
 
 function now(){return new Date().toISOString()}
@@ -101,6 +111,7 @@ async function requestToken(prompt=""){
    accessToken=response.access_token;
    tokenExpiresAt=Date.now()+Math.max(60,(Number(response.expires_in)||3600)-60)*1000;
    rememberSessionToken();
+   rememberDriveAuthorization();
    resolve(accessToken);
   };
   tokenClient.requestAccessToken({prompt});
@@ -218,17 +229,22 @@ async function initializeDrive(interactive=true){
   initialized=true;
   initCategories();
   render();
+  rememberDriveAuthorization();
   setDriveState("connected","Online library loaded from Google Drive.");
  }catch(error){
   initialized=false;
   prompts=[];
   render();
-  setDriveState("error",error.message);
+  if(interactive){
+   setDriveState("error",error.message);
+  }else{
+   setDriveState("disconnected","Google Drive could not reconnect automatically. Click Connect Google Drive once to continue.");
+  }
  }
 }
 function disconnect(){
  const token=accessToken;
- accessToken="";tokenExpiresAt=0;clearSessionToken();folderId="";dataFileId="";prompts=[];initialized=false;syncChain=Promise.resolve();
+ accessToken="";tokenExpiresAt=0;clearSessionToken();clearDriveAuthorization();folderId="";dataFileId="";prompts=[];initialized=false;syncChain=Promise.resolve();
  if(token&&window.google?.accounts?.oauth2)google.accounts.oauth2.revoke(token,()=>{});
  render();setDriveState("disconnected");
 }
@@ -527,7 +543,7 @@ function showVersions(id){
 function waitForGoogleIdentity(){
  if(window.google?.accounts?.oauth2){
   tokenClient=google.accounts.oauth2.initTokenClient({client_id:CLIENT_ID,scope:DRIVE_SCOPE,callback:()=>{}});
-  if(restoreSessionToken()){
+  if(restoreSessionToken()||wasDriveAuthorized()){
    initializeDrive(false);
   }
   return;
