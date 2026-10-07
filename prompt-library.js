@@ -9,7 +9,7 @@ const MIME_JSON="application/json";
 const MAX_API_REQUESTS_PER_SESSION=1000;
 const SESSION_TOKEN_KEY="wtPromptDriveToken";
 const SESSION_EXPIRY_KEY="wtPromptDriveTokenExpiry";
-const CATEGORIES=["Webflow","Framer","HTML","CSS","JavaScript","Ocio","General"];
+const CATEGORIES=["Webflow","Figma","Framer","HTML","CSS","JavaScript","Ocio","General"];
 const $=id=>document.getElementById(id);
 
 let prompts=[];
