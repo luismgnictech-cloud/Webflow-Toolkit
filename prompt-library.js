@@ -7,6 +7,8 @@ const DRIVE_FILE_NAME="prompt-library.json";
 const MIME_FOLDER="application/vnd.google-apps.folder";
 const MIME_JSON="application/json";
 const MAX_API_REQUESTS_PER_SESSION=1000;
+const SESSION_TOKEN_KEY="wtPromptDriveToken";
+const SESSION_EXPIRY_KEY="wtPromptDriveTokenExpiry";
 const CATEGORIES=["Webflow","Framer","HTML","CSS","JavaScript","Ocio","General"];
 const $=id=>document.getElementById(id);
 
@@ -22,6 +24,31 @@ let apiRequestCount=0;
 let syncing=false;
 let initialized=false;
 let syncChain=Promise.resolve();
+
+function restoreSessionToken(){
+ try{
+  const token=sessionStorage.getItem(SESSION_TOKEN_KEY)||"";
+  const expiry=Number(sessionStorage.getItem(SESSION_EXPIRY_KEY)||0);
+  if(token&&expiry>Date.now()+30000){
+   accessToken=token;
+   tokenExpiresAt=expiry;
+   return true;
+  }
+ }catch{}
+ return false;
+}
+function rememberSessionToken(){
+ try{
+  sessionStorage.setItem(SESSION_TOKEN_KEY,accessToken);
+  sessionStorage.setItem(SESSION_EXPIRY_KEY,String(tokenExpiresAt));
+ }catch{}
+}
+function clearSessionToken(){
+ try{
+  sessionStorage.removeItem(SESSION_TOKEN_KEY);
+  sessionStorage.removeItem(SESSION_EXPIRY_KEY);
+ }catch{}
+}
 
 function now(){return new Date().toISOString()}
 function latest(prompt){return prompt.versions[prompt.versions.length-1]}
@@ -48,6 +75,7 @@ function setDriveState(state,note=""){
 function disableForQuota(message){
  accessToken="";
  tokenExpiresAt=0;
+ clearSessionToken();
  setDriveState("error",message+" Writes are stopped to avoid repeated quota requests.");
  notify("Drive quota guard activated");
 }
@@ -72,6 +100,7 @@ async function requestToken(prompt=""){
    if(response.error){reject(new Error(response.error_description||response.error));return}
    accessToken=response.access_token;
    tokenExpiresAt=Date.now()+Math.max(60,(Number(response.expires_in)||3600)-60)*1000;
+   rememberSessionToken();
    resolve(accessToken);
   };
   tokenClient.requestAccessToken({prompt});
@@ -88,7 +117,7 @@ async function driveFetch(url,options={},retry=true){
  headers.set("Authorization","Bearer "+accessToken);
  const response=await fetch(url,{...options,headers});
  if(response.status===401&&retry){
-  accessToken="";tokenExpiresAt=0;
+  accessToken="";tokenExpiresAt=0;clearSessionToken();
   await ensureToken(false);
   return driveFetch(url,options,false);
  }
@@ -199,7 +228,7 @@ async function initializeDrive(interactive=true){
 }
 function disconnect(){
  const token=accessToken;
- accessToken="";tokenExpiresAt=0;folderId="";dataFileId="";prompts=[];initialized=false;syncChain=Promise.resolve();
+ accessToken="";tokenExpiresAt=0;clearSessionToken();folderId="";dataFileId="";prompts=[];initialized=false;syncChain=Promise.resolve();
  if(token&&window.google?.accounts?.oauth2)google.accounts.oauth2.revoke(token,()=>{});
  render();setDriveState("disconnected");
 }
@@ -242,7 +271,7 @@ function stats(){
  $("copyCount").textContent=prompts.reduce((sum,p)=>sum+(p.usageCount||0),0);
  const ranked=[...prompts].sort((a,b)=>(b.usageCount||0)-(a.usageCount||0)||new Date(b.updatedAt)-new Date(a.updatedAt)).slice(0,5);
  const list=$("ranking");list.replaceChildren();
- if(!ranked.length){const li=document.createElement("li");li.textContent=initialized?"No usage yet.":"Connect Drive to load prompts.";li.style.color="#7a8695";list.append(li);return}
+ if(!ranked.length){const li=document.createElement("li");li.className="rank-empty";li.textContent=initialized?"No usage yet.":"Connect Drive to load prompts.";list.append(li);return}
  ranked.forEach((p,i)=>{
   const li=document.createElement("li"),n=document.createElement("span"),title=document.createElement("span"),count=document.createElement("span");
   n.className="rank-index";n.textContent=i+1;
@@ -461,6 +490,9 @@ function showVersions(id){
 function waitForGoogleIdentity(){
  if(window.google?.accounts?.oauth2){
   tokenClient=google.accounts.oauth2.initTokenClient({client_id:CLIENT_ID,scope:DRIVE_SCOPE,callback:()=>{}});
+  if(restoreSessionToken()){
+   initializeDrive(false);
+  }
   return;
  }
  setTimeout(waitForGoogleIdentity,100);
