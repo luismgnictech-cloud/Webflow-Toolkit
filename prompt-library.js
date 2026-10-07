@@ -310,6 +310,7 @@ function promptCard(prompt){
  const actions=document.createElement("div");actions.className="card-actions";
  actions.append(
  button("Copy","btn btn-primary",()=>copyPrompt(prompt.id)),
+ button("Download .md","btn",()=>downloadMarkdown(prompt.id)),
  button("Test","btn",()=>openTest(prompt.id)),
  button("Tests ("+promptTests(prompt).length+")","btn",()=>showTests(prompt.id)),
  button("Compare","btn",()=>openCompare(prompt.id)),
@@ -320,6 +321,42 @@ function promptCard(prompt){
  card.append(top,preview,actions);return card;
 }
 function button(text,className,fn){const b=document.createElement("button");b.type="button";b.className=className;b.textContent=text;b.addEventListener("click",fn);return b}
+function markdownFilename(title){
+ return (title||"prompt")
+  .normalize("NFKD")
+  .replace(/[\u0300-\u036f]/g,"")
+  .replace(/[^a-zA-Z0-9]+/g,"-")
+  .replace(/^-+|-+$/g,"")
+  .toLowerCase()
+  .slice(0,80)||"prompt";
+}
+function downloadMarkdown(id){
+ const prompt=prompts.find(p=>p.id===id);if(!prompt)return;
+ const v=latest(prompt);
+ const markdown=[
+  "# "+v.title,
+  "",
+  "- Category: "+v.category,
+  "- Version: "+v.version,
+  "- Updated: "+formatDate(prompt.updatedAt),
+  "- Copies: "+(prompt.usageCount||0),
+  "",
+  "## Prompt",
+  "",
+  v.content,
+  ""
+ ].join("\n");
+ const blob=new Blob([markdown],{type:"text/markdown;charset=utf-8"});
+ const url=URL.createObjectURL(blob);
+ const a=document.createElement("a");
+ a.href=url;
+ a.download=markdownFilename(v.title)+"-v"+v.version+".md";
+ document.body.append(a);
+ a.click();
+ a.remove();
+ setTimeout(()=>URL.revokeObjectURL(url),0);
+ notify("Markdown downloaded");
+}
 async function copyPrompt(id){
  const prompt=prompts.find(p=>p.id===id);if(!prompt)return;
  try{
