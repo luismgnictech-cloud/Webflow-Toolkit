@@ -21,6 +21,7 @@ let dataFileId="";
 let apiRequestCount=0;
 let syncing=false;
 let initialized=false;
+let syncChain=Promise.resolve();
 
 function now(){return new Date().toISOString()}
 function latest(prompt){return prompt.versions[prompt.versions.length-1]}
@@ -148,8 +149,8 @@ async function loadData(){
  const parsed=typeof text==="string"?JSON.parse(text):text;
  prompts=Array.isArray(parsed?.prompts)?parsed.prompts:[];
 }
-async function saveToDrive(){
- if(!dataFileId||syncing)return;
+async function performSave(){
+ if(!dataFileId)throw new Error("Google Drive data file is not ready.");
  syncing=true;
  setDriveState("syncing");
  try{
@@ -166,6 +167,10 @@ async function saveToDrive(){
   syncing=false;
   $("newPrompt").disabled=!accessToken;
  }
+}
+function saveToDrive(){
+ syncChain=syncChain.catch(()=>{}).then(()=>performSave());
+ return syncChain;
 }
 async function initializeDrive(interactive=true){
  try{
@@ -192,7 +197,9 @@ async function initializeDrive(interactive=true){
  }
 }
 function disconnect(){
- accessToken="";tokenExpiresAt=0;folderId="";dataFileId="";prompts=[];initialized=false;
+ const token=accessToken;
+ accessToken="";tokenExpiresAt=0;folderId="";dataFileId="";prompts=[];initialized=false;syncChain=Promise.resolve();
+ if(token&&window.google?.accounts?.oauth2)google.accounts.oauth2.revoke(token,()=>{});
  render();setDriveState("disconnected");
 }
 function slugWords(text){return text.replace(/\s+/g," ").trim().split(" ").filter(Boolean)}
@@ -286,7 +293,7 @@ async function savePrompt(event){
   }else{
    const time=now();prompts.unshift({id:crypto.randomUUID(),createdAt:time,updatedAt:time,usageCount:0,lastUsedAt:null,versions:[{version:1,title,category,content,createdAt:time}]});
   }
-  render();await saveToDrive();$("editor").close();editingId=null;notify(editingId?"New version saved":"Prompt saved online");
+  const wasEditing=Boolean(editingId);render();await saveToDrive();$("editor").close();editingId=null;notify(wasEditing?"New version saved online":"Prompt saved online");
  }catch(error){
   prompts=JSON.parse(snapshot);render();notify("Save failed: "+error.message);
  }
