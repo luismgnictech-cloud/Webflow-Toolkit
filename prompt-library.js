@@ -1,26 +1,201 @@
 "use strict";
-const STORAGE_KEY="webflowToolkitPromptLibraryV1";
+
+const CLIENT_ID="766686827896-8h8ct9f3fo9gsenl0867r8cct9ehp86t.apps.googleusercontent.com";
+const DRIVE_SCOPE="https://www.googleapis.com/auth/drive.file";
+const DRIVE_FOLDER_NAME="Webflow Toolkit";
+const DRIVE_FILE_NAME="prompt-library.json";
+const MIME_FOLDER="application/vnd.google-apps.folder";
+const MIME_JSON="application/json";
+const MAX_API_REQUESTS_PER_SESSION=1000;
 const CATEGORIES=["Webflow","Framer","HTML","CSS","JavaScript","Ocio","General"];
 const $=id=>document.getElementById(id);
-let prompts=load();
+
+let prompts=[];
 let editingId=null;
 let toastTimer=null;
+let tokenClient=null;
+let accessToken="";
+let tokenExpiresAt=0;
+let folderId="";
+let dataFileId="";
+let apiRequestCount=0;
+let syncing=false;
+let initialized=false;
 
-function load(){
- try{
-  const value=JSON.parse(localStorage.getItem(STORAGE_KEY)||"[]");
-  return Array.isArray(value)?value:[];
- }catch{return []}
-}
-function save(){localStorage.setItem(STORAGE_KEY,JSON.stringify(prompts))}
 function now(){return new Date().toISOString()}
 function latest(prompt){return prompt.versions[prompt.versions.length-1]}
 function formatDate(value){return new Intl.DateTimeFormat(undefined,{dateStyle:"medium",timeStyle:"short"}).format(new Date(value))}
-function escapeText(value){return String(value??"")}
-function notify(text){const el=$("toast");el.textContent=text;el.hidden=false;clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.hidden=true,2200)}
-function slugWords(text){
- return text.replace(/\s+/g," ").trim().split(" ").filter(Boolean);
+function notify(text){const el=$("toast");el.textContent=text;el.hidden=false;clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.hidden=true,2600)}
+function setDriveState(state,note=""){
+ const panel=$("drivePanel");
+ panel.classList.toggle("is-connected",state==="connected");
+ panel.classList.toggle("is-error",state==="error");
+ const labels={disconnected:"Google Drive · Not connected",connecting:"Google Drive · Connecting…",connected:"Google Drive · Connected",syncing:"Google Drive · Syncing…",error:"Google Drive · Attention required"};
+ $("driveStatus").textContent=labels[state]||labels.disconnected;
+ $("driveNote").textContent=note||(
+  state==="connected"?"Online library loaded from Drive.":
+  state==="syncing"?"Saving changes to Drive…":
+  state==="error"?"Drive could not be reached.":
+  "Connect your Google account to load your online prompt library."
+ );
+ const connected=state==="connected"||state==="syncing";
+ $("connectDrive").hidden=connected;
+ $("syncDrive").hidden=!connected;
+ $("disconnectDrive").hidden=!connected;
+ $("newPrompt").disabled=!connected||syncing;
 }
+function disableForQuota(message){
+ accessToken="";
+ tokenExpiresAt=0;
+ setDriveState("error",message+" Writes are stopped to avoid repeated quota requests.");
+ notify("Drive quota guard activated");
+}
+function countRequest(){
+ apiRequestCount++;
+ if(apiRequestCount>MAX_API_REQUESTS_PER_SESSION){
+  disableForQuota("This session reached the app's internal request safety limit.");
+  throw new Error("Internal Drive request safety limit reached.");
+ }
+}
+function driveErrorMessage(data,status){
+ const reason=data?.error?.errors?.[0]?.reason||data?.error?.status||"";
+ if(/quota|rateLimit|dailyLimit|userRateLimit/i.test(reason)||status===429){
+  disableForQuota("Google Drive reported a quota or rate limit.");
+ }
+ return data?.error?.message||("Google Drive request failed ("+status+").");
+}
+async function requestToken(prompt=""){
+ if(!tokenClient)throw new Error("Google Identity Services is not ready yet.");
+ return new Promise((resolve,reject)=>{
+  tokenClient.callback=response=>{
+   if(response.error){reject(new Error(response.error_description||response.error));return}
+   accessToken=response.access_token;
+   tokenExpiresAt=Date.now()+Math.max(60,(Number(response.expires_in)||3600)-60)*1000;
+   resolve(accessToken);
+  };
+  tokenClient.requestAccessToken({prompt});
+ });
+}
+async function ensureToken(interactive=false){
+ if(accessToken&&Date.now()<tokenExpiresAt)return accessToken;
+ return requestToken(interactive?"consent":"");
+}
+async function driveFetch(url,options={},retry=true){
+ countRequest();
+ await ensureToken(false);
+ const headers=new Headers(options.headers||{});
+ headers.set("Authorization","Bearer "+accessToken);
+ const response=await fetch(url,{...options,headers});
+ if(response.status===401&&retry){
+  accessToken="";tokenExpiresAt=0;
+  await ensureToken(false);
+  return driveFetch(url,options,false);
+ }
+ if(!response.ok){
+  let data={};try{data=await response.json()}catch{}
+  throw new Error(driveErrorMessage(data,response.status));
+ }
+ if(response.status===204)return null;
+ const type=response.headers.get("content-type")||"";
+ return type.includes("application/json")?response.json():response.text();
+}
+function q(value){return encodeURIComponent(value)}
+async function findFolder(){
+ const query="name='"+DRIVE_FOLDER_NAME.replace(/'/g,"\\'")+"' and mimeType='"+MIME_FOLDER+"' and trashed=false";
+ const data=await driveFetch("https://www.googleapis.com/drive/v3/files?q="+q(query)+"&spaces=drive&fields=files(id,name)&pageSize=10");
+ return data.files?.[0]?.id||"";
+}
+async function createFolder(){
+ const data=await driveFetch("https://www.googleapis.com/drive/v3/files?fields=id",{
+  method:"POST",
+  headers:{"Content-Type":"application/json"},
+  body:JSON.stringify({name:DRIVE_FOLDER_NAME,mimeType:MIME_FOLDER})
+ });
+ return data.id;
+}
+async function findDataFile(){
+ const query="name='"+DRIVE_FILE_NAME+"' and '"+folderId+"' in parents and trashed=false";
+ const data=await driveFetch("https://www.googleapis.com/drive/v3/files?q="+q(query)+"&spaces=drive&fields=files(id,name,modifiedTime)&pageSize=10");
+ return data.files?.[0]?.id||"";
+}
+function dataPayload(){
+ return {
+  schemaVersion:1,
+  updatedAt:now(),
+  categories:CATEGORIES,
+  prompts
+ };
+}
+async function createDataFile(){
+ const boundary="wt_"+crypto.randomUUID();
+ const metadata={name:DRIVE_FILE_NAME,mimeType:MIME_JSON,parents:[folderId]};
+ const body=[
+  "--"+boundary+"\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n",
+  JSON.stringify(metadata),
+  "\r\n--"+boundary+"\r\nContent-Type: application/json\r\n\r\n",
+  JSON.stringify(dataPayload(),null,2),
+  "\r\n--"+boundary+"--"
+ ].join("");
+ const data=await driveFetch("https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id",{
+  method:"POST",
+  headers:{"Content-Type":"multipart/related; boundary="+boundary},
+  body
+ });
+ return data.id;
+}
+async function loadData(){
+ const text=await driveFetch("https://www.googleapis.com/drive/v3/files/"+encodeURIComponent(dataFileId)+"?alt=media");
+ const parsed=typeof text==="string"?JSON.parse(text):text;
+ prompts=Array.isArray(parsed?.prompts)?parsed.prompts:[];
+}
+async function saveToDrive(){
+ if(!dataFileId||syncing)return;
+ syncing=true;
+ setDriveState("syncing");
+ try{
+  await driveFetch("https://www.googleapis.com/upload/drive/v3/files/"+encodeURIComponent(dataFileId)+"?uploadType=media",{
+   method:"PATCH",
+   headers:{"Content-Type":"application/json"},
+   body:JSON.stringify(dataPayload(),null,2)
+  });
+  setDriveState("connected","Saved online · "+new Date().toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"}));
+ }catch(error){
+  setDriveState("error",error.message);
+  throw error;
+ }finally{
+  syncing=false;
+  $("newPrompt").disabled=!accessToken;
+ }
+}
+async function initializeDrive(interactive=true){
+ try{
+  setDriveState("connecting","Authorizing Google Drive…");
+  await ensureToken(interactive);
+  folderId=await findFolder();
+  if(!folderId)folderId=await createFolder();
+  dataFileId=await findDataFile();
+  if(!dataFileId){
+   prompts=[];
+   dataFileId=await createDataFile();
+  }else{
+   await loadData();
+  }
+  initialized=true;
+  initCategories();
+  render();
+  setDriveState("connected","Online library loaded from Google Drive.");
+ }catch(error){
+  initialized=false;
+  prompts=[];
+  render();
+  setDriveState("error",error.message);
+ }
+}
+function disconnect(){
+ accessToken="";tokenExpiresAt=0;folderId="";dataFileId="";prompts=[];initialized=false;
+ render();setDriveState("disconnected");
+}
+function slugWords(text){return text.replace(/\s+/g," ").trim().split(" ").filter(Boolean)}
 function suggestTitle(text,category){
  let cleaned=text.replace(/[#*_>\[\]{}()]/g," ").replace(/\s+/g," ").trim();
  cleaned=cleaned.replace(/^(act as|you are|please|i want you to|create|generate|build|make|help me|write)\s+/i,"");
@@ -29,8 +204,7 @@ function suggestTitle(text,category){
  let title=words.join(" ");
  if(title.length>72)title=title.slice(0,72).replace(/\s+\S*$/,"");
  if(!title)title=category+" Prompt";
- title=title.charAt(0).toUpperCase()+title.slice(1);
- return title;
+ return title.charAt(0).toUpperCase()+title.slice(1);
 }
 function initCategories(){
  $("category").replaceChildren(...CATEGORIES.map(c=>new Option(c,c)));
@@ -47,12 +221,12 @@ function stats(){
  $("copyCount").textContent=prompts.reduce((sum,p)=>sum+(p.usageCount||0),0);
  const ranked=[...prompts].sort((a,b)=>(b.usageCount||0)-(a.usageCount||0)||new Date(b.updatedAt)-new Date(a.updatedAt)).slice(0,5);
  const list=$("ranking");list.replaceChildren();
- if(!ranked.length){const li=document.createElement("li");li.textContent="No usage yet.";li.style.color="#7a8695";list.append(li);return}
+ if(!ranked.length){const li=document.createElement("li");li.textContent=initialized?"No usage yet.":"Connect Drive to load prompts.";li.style.color="#7a8695";list.append(li);return}
  ranked.forEach((p,i)=>{
-  const li=document.createElement("li");
-  const n=document.createElement("span");n.className="rank-index";n.textContent=i+1;
-  const title=document.createElement("span");title.className="rank-title";title.textContent=latest(p).title;title.title=latest(p).title;
-  const count=document.createElement("span");count.className="rank-count";count.textContent=(p.usageCount||0)+" copies";
+  const li=document.createElement("li"),n=document.createElement("span"),title=document.createElement("span"),count=document.createElement("span");
+  n.className="rank-index";n.textContent=i+1;
+  title.className="rank-title";title.textContent=latest(p).title;title.title=latest(p).title;
+  count.className="rank-count";count.textContent=(p.usageCount||0)+" copies";
   li.append(n,title,count);list.append(li);
  });
 }
@@ -63,95 +237,99 @@ function render(){
   const v=latest(p);
   return (!cat||v.category===cat)&&(!term||v.title.toLowerCase().includes(term)||v.content.toLowerCase().includes(term));
  }).sort((a,b)=>new Date(b.updatedAt)-new Date(a.updatedAt));
- $("resultCount").textContent=filtered.length+" result"+(filtered.length===1?"":"s");
+ $("resultCount").textContent=initialized?(filtered.length+" result"+(filtered.length===1?"":"s")):"";
  const list=$("promptList");list.replaceChildren();
+ if(!initialized){const empty=document.createElement("div");empty.className="empty";empty.textContent="Connect Google Drive to open your online Prompt Library.";list.append(empty);return}
  if(!filtered.length){const empty=document.createElement("div");empty.className="empty";empty.textContent=prompts.length?"No prompts match your filters.":"No prompts yet. Add your first prompt.";list.append(empty);return}
  filtered.forEach(prompt=>list.append(promptCard(prompt)));
 }
 function promptCard(prompt){
  const v=latest(prompt),card=document.createElement("article");card.className="prompt-card";
- const top=document.createElement("div");top.className="prompt-top";
- const main=document.createElement("div");
- const title=document.createElement("h3");title.className="prompt-title";title.textContent=v.title;
- const meta=document.createElement("div");meta.className="meta";
- const badge=document.createElement("span");badge.className="badge";badge.textContent=v.category;
- const version=document.createElement("span");version.textContent="v"+v.version;
- const copies=document.createElement("span");copies.textContent=(prompt.usageCount||0)+" copies";
- const updated=document.createElement("span");updated.textContent="Updated "+formatDate(prompt.updatedAt);
+ const top=document.createElement("div"),main=document.createElement("div"),title=document.createElement("h3"),meta=document.createElement("div");
+ top.className="prompt-top";title.className="prompt-title";title.textContent=v.title;meta.className="meta";
+ const badge=document.createElement("span"),version=document.createElement("span"),copies=document.createElement("span"),updated=document.createElement("span");
+ badge.className="badge";badge.textContent=v.category;version.textContent="v"+v.version;copies.textContent=(prompt.usageCount||0)+" copies";updated.textContent="Updated "+formatDate(prompt.updatedAt);
  meta.append(badge,version,copies,updated);main.append(title,meta);top.append(main);
  const preview=document.createElement("div");preview.className="prompt-preview";preview.textContent=v.content;
  const actions=document.createElement("div");actions.className="card-actions";
- const copy=button("Copy","btn btn-primary",async()=>{await copyPrompt(prompt.id)});
- const edit=button("Edit","btn",()=>openEditor(prompt.id));
- const versions=button("Versions ("+prompt.versions.length+")","btn",()=>showVersions(prompt.id));
- const remove=button("Delete","btn btn-danger",()=>deletePrompt(prompt.id));
- actions.append(copy,edit,versions,remove);card.append(top,preview,actions);return card;
+ actions.append(button("Copy","btn btn-primary",()=>copyPrompt(prompt.id)),button("Edit","btn",()=>openEditor(prompt.id)),button("Versions ("+prompt.versions.length+")","btn",()=>showVersions(prompt.id)),button("Delete","btn btn-danger",()=>deletePrompt(prompt.id)));
+ card.append(top,preview,actions);return card;
 }
 function button(text,className,fn){const b=document.createElement("button");b.type="button";b.className=className;b.textContent=text;b.addEventListener("click",fn);return b}
 async function copyPrompt(id){
  const prompt=prompts.find(p=>p.id===id);if(!prompt)return;
- const text=latest(prompt).content;
  try{
+  const text=latest(prompt).content;
   if(navigator.clipboard&&window.isSecureContext)await navigator.clipboard.writeText(text);
   else{const ta=document.createElement("textarea");ta.value=text;ta.style.position="fixed";ta.style.opacity="0";document.body.append(ta);ta.select();document.execCommand("copy");ta.remove()}
-  prompt.usageCount=(prompt.usageCount||0)+1;prompt.lastUsedAt=now();save();render();notify("Prompt copied");
- }catch{notify("Unable to copy automatically")}
+  prompt.usageCount=(prompt.usageCount||0)+1;prompt.lastUsedAt=now();render();
+  await saveToDrive();notify("Prompt copied and usage synced");
+ }catch(error){notify(error.message||"Unable to copy or sync")}
 }
 function openEditor(id=null){
- editingId=id;
- $("promptForm").reset();
- $("promptId").value=id||"";
- if(id){
-  const p=prompts.find(x=>x.id===id),v=latest(p);
-  $("editorTitle").textContent="Edit Prompt";$("title").value=v.title;$("category").value=v.category;$("promptText").value=v.content;
- }else{
-  $("editorTitle").textContent="Add Prompt";$("category").value="Webflow";
- }
- $("editor").showModal();
- setTimeout(()=>$("title").focus(),0);
+ if(!initialized)return;
+ editingId=id;$("promptForm").reset();$("promptId").value=id||"";
+ if(id){const p=prompts.find(x=>x.id===id),v=latest(p);$("editorTitle").textContent="Edit Prompt";$("title").value=v.title;$("category").value=v.category;$("promptText").value=v.content}
+ else{$("editorTitle").textContent="Add Prompt";$("category").value="Webflow"}
+ $("editor").showModal();setTimeout(()=>$("title").focus(),0);
 }
-function savePrompt(event){
+async function savePrompt(event){
  event.preventDefault();
  const title=$("title").value.trim(),category=$("category").value,content=$("promptText").value.trim();
  if(!title||!content)return;
- if(editingId){
-  const p=prompts.find(x=>x.id===editingId),v=latest(p);
-  if(v.title===title&&v.category===category&&v.content===content){$("editor").close();notify("No changes to save");return}
-  p.versions.push({version:v.version+1,title,category,content,createdAt:now()});
-  p.updatedAt=now();
-  notify("New version saved");
- }else{
-  const time=now();
-  prompts.unshift({id:crypto.randomUUID(),createdAt:time,updatedAt:time,usageCount:0,lastUsedAt:null,versions:[{version:1,title,category,content,createdAt:time}]});
-  notify("Prompt added");
+ const snapshot=JSON.stringify(prompts);
+ try{
+  if(editingId){
+   const p=prompts.find(x=>x.id===editingId),v=latest(p);
+   if(v.title===title&&v.category===category&&v.content===content){$("editor").close();notify("No changes to save");return}
+   p.versions.push({version:v.version+1,title,category,content,createdAt:now()});p.updatedAt=now();
+  }else{
+   const time=now();prompts.unshift({id:crypto.randomUUID(),createdAt:time,updatedAt:time,usageCount:0,lastUsedAt:null,versions:[{version:1,title,category,content,createdAt:time}]});
+  }
+  render();await saveToDrive();$("editor").close();editingId=null;notify(editingId?"New version saved":"Prompt saved online");
+ }catch(error){
+  prompts=JSON.parse(snapshot);render();notify("Save failed: "+error.message);
  }
- save();$("editor").close();editingId=null;render();
 }
-function deletePrompt(id){
+async function deletePrompt(id){
  const p=prompts.find(x=>x.id===id);if(!p)return;
  if(!confirm('Delete "'+latest(p).title+'"? This also deletes its version history.'))return;
- prompts=prompts.filter(x=>x.id!==id);save();render();notify("Prompt deleted");
+ const snapshot=JSON.stringify(prompts);
+ try{prompts=prompts.filter(x=>x.id!==id);render();await saveToDrive();notify("Prompt deleted online")}
+ catch(error){prompts=JSON.parse(snapshot);render();notify("Delete failed: "+error.message)}
 }
 function showVersions(id){
  const p=prompts.find(x=>x.id===id);if(!p)return;
  $("versionsTitle").textContent=latest(p).title;
  const list=$("versionList");list.replaceChildren();
  [...p.versions].sort((a,b)=>a.version-b.version).forEach(v=>{
-  const box=document.createElement("article");box.className="version";
-  const head=document.createElement("div");head.className="version-head";
-  const num=document.createElement("span");num.className="version-number";num.textContent="Version "+v.version;
-  const date=document.createElement("span");date.className="version-date";date.textContent=formatDate(v.createdAt);
-  const title=document.createElement("div");title.className="version-title";title.textContent=v.title+" · "+v.category;
-  const content=document.createElement("div");content.className="version-content";content.textContent=v.content;
+  const box=document.createElement("article"),head=document.createElement("div"),num=document.createElement("span"),date=document.createElement("span"),title=document.createElement("div"),content=document.createElement("div");
+  box.className="version";head.className="version-head";num.className="version-number";date.className="version-date";title.className="version-title";content.className="version-content";
+  num.textContent="Version "+v.version;date.textContent=formatDate(v.createdAt);title.textContent=v.title+" · "+v.category;content.textContent=v.content;
   head.append(num,date);box.append(head,title,content);list.append(box);
  });
  $("versionsDialog").showModal();
 }
+function waitForGoogleIdentity(){
+ if(window.google?.accounts?.oauth2){
+  tokenClient=google.accounts.oauth2.initTokenClient({client_id:CLIENT_ID,scope:DRIVE_SCOPE,callback:()=>{}});
+  return;
+ }
+ setTimeout(waitForGoogleIdentity,100);
+}
+
 $("newPrompt").addEventListener("click",()=>openEditor());
 $("promptForm").addEventListener("submit",savePrompt);
-$("suggestTitle").addEventListener("click",()=>{$("title").value=suggestTitle($("promptText").value,$("category").value);$("title").focus();});
+$("suggestTitle").addEventListener("click",()=>{$("title").value=suggestTitle($("promptText").value,$("category").value);$("title").focus()});
 $("search").addEventListener("input",render);
 $("categoryFilter").addEventListener("change",render);
+$("connectDrive").addEventListener("click",()=>initializeDrive(true));
+$("syncDrive").addEventListener("click",async()=>{try{await saveToDrive();notify("Drive synced")}catch(error){notify(error.message)}});
+$("disconnectDrive").addEventListener("click",disconnect);
 document.querySelectorAll("[data-close]").forEach(btn=>btn.addEventListener("click",()=>$(btn.dataset.close).close()));
 [$("editor"),$("versionsDialog")].forEach(dialog=>dialog.addEventListener("click",e=>{if(e.target===dialog)dialog.close()}));
-initCategories();render();
+
+initCategories();
+render();
+setDriveState("disconnected");
+waitForGoogleIdentity();
