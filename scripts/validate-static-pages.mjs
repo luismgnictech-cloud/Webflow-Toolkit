@@ -23,7 +23,7 @@ for (const [file, markers] of Object.entries(pages)) {
     }
   }
 }
-for (const file of ["image-compressor.js", "code-playground.js", "responsive-lab/app.js", "responsive-lab/views.js"]) {
+for (const file of ["image-compressor.js", "code-playground.js", "responsive-lab/app.js", "responsive-lab/views.js", "prompt-library.js"]) {
   if (!fs.existsSync(file) || fs.statSync(file).size < 100) {
     console.error("Missing or suspiciously small JS:", file);
     failed = true;
