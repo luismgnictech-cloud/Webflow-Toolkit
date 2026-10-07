@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#f7f8fa">
+<link rel="icon" type="image/png" sizes="32x32" href="./assets/favicon-32x32.png">
+<link rel="apple-touch-icon" sizes="180x180" href="./assets/apple-touch-icon.png">
+<meta name="description" content="Save, organize, version, rank, and reuse useful prompts in Webflow Toolkit.">
+<title>Prompt Library | Webflow Toolkit</title>
+<style>
+:root{font-family:Inter,ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#18212e;background:#f7f8fa;font-synthesis:none}*{box-sizing:border-box}body{margin:0;min-width:0}button,input,textarea,select{font:inherit}button{cursor:pointer}a{color:inherit}.page{width:min(1180px,calc(100% - 40px));margin:auto;padding:28px 0 80px}.nav{display:flex;justify-content:space-between;align-items:center;gap:18px;flex-wrap:wrap;margin-bottom:42px}.brand{font-weight:800;text-decoration:none;letter-spacing:-.03em}.links{display:flex;gap:18px;flex-wrap:wrap;font-size:.85rem;color:#657286}.links a{text-decoration:none}.links a[aria-current=page]{font-weight:800;color:#3454cc}.hero{display:flex;justify-content:space-between;align-items:end;gap:24px;margin-bottom:28px}.eyebrow{text-transform:uppercase;color:#5367b0;font-size:.75rem;font-weight:800;letter-spacing:.13em}.hero h1{margin:10px 0 8px;font-size:clamp(2.1rem,4.5vw,3.5rem);letter-spacing:-.05em;line-height:1.05}.intro{margin:0;max-width:700px;color:#5d6a7a;line-height:1.65}.btn{border:1px solid #d3dbe6;border-radius:10px;background:#fff;color:#23354d;padding:10px 14px;font-weight:750}.btn:hover{background:#f0f3f8}.btn-primary{background:#3454cc;border-color:#3454cc;color:#fff}.btn-primary:hover{background:#2847ba}.btn-danger{color:#a53743}.layout{display:grid;grid-template-columns:280px minmax(0,1fr);gap:20px}.panel{background:#fff;border:1px solid #e1e6ee;border-radius:16px;box-shadow:0 10px 30px rgba(35,48,70,.035)}.sidebar{padding:18px;height:max-content;position:sticky;top:18px}.sidebar h2,.content-head h2{font-size:1rem;margin:0 0 12px}.stat-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:18px}.stat{padding:12px;border-radius:10px;background:#f6f8fb}.stat strong{display:block;font-size:1.3rem}.stat span{font-size:.72rem;color:#748092}.rank{display:grid;gap:8px;margin:0;padding:0;list-style:none}.rank li{display:grid;grid-template-columns:24px 1fr auto;gap:8px;align-items:center;padding:9px;border-radius:9px;background:#fafbfc}.rank-index{font-weight:800;color:#98a2b1}.rank-title{min-width:0;font-size:.82rem;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.rank-count{font-size:.72rem;color:#6d798a}.content{padding:18px}.content-head{display:flex;justify-content:space-between;gap:14px;align-items:center;margin-bottom:14px}.filters{display:grid;grid-template-columns:minmax(0,1fr) 190px;gap:10px;margin-bottom:16px}input,textarea,select{width:100%;border:1px solid #cdd6e1;border-radius:10px;background:#fff;color:#18212e;padding:11px 12px;outline:none}textarea{min-height:220px;resize:vertical;line-height:1.55}input:focus-visible,textarea:focus-visible,select:focus-visible,button:focus-visible{outline:3px solid #a7baff;outline-offset:2px}.prompt-list{display:grid;gap:12px}.prompt-card{border:1px solid #e2e7ee;border-radius:13px;padding:16px;background:#fff}.prompt-top{display:flex;justify-content:space-between;gap:14px}.prompt-title{font-size:1rem;font-weight:800;margin:0 0 7px}.meta{display:flex;gap:8px;flex-wrap:wrap;align-items:center;color:#778294;font-size:.75rem}.badge{display:inline-flex;padding:4px 8px;border-radius:999px;background:#eef2ff;color:#4058b3;font-weight:750}.prompt-preview{margin:13px 0 0;color:#4e5b6c;font-size:.86rem;line-height:1.55;white-space:pre-wrap;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden}.card-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:14px}.card-actions .btn{padding:8px 10px;font-size:.78rem}.empty{padding:46px 20px;text-align:center;color:#748092}.dialog{border:0;border-radius:18px;padding:0;width:min(720px,calc(100% - 24px));max-height:90vh;box-shadow:0 24px 80px #0004}.dialog::backdrop{background:#16203380}.dialog-body{padding:22px;overflow:auto;max-height:90vh}.dialog-head{display:flex;justify-content:space-between;gap:14px;align-items:center;margin-bottom:18px}.dialog-head h2{margin:0;font-size:1.15rem}.close{border:0;background:transparent;font-size:1.5rem;color:#738092}.field{margin-bottom:16px}.field label{display:block;font-weight:750;font-size:.83rem;margin-bottom:7px}.field-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px}.form-actions{display:flex;justify-content:flex-end;gap:9px;margin-top:20px}.version-list{display:grid;gap:14px}.version{border:1px solid #e1e6ee;border-radius:12px;padding:14px}.version-head{display:flex;justify-content:space-between;gap:12px;margin-bottom:9px}.version-number{font-weight:800}.version-date{font-size:.76rem;color:#7a8594}.version-title{font-weight:700;margin-bottom:7px}.version-content{white-space:pre-wrap;color:#4e5b6c;font-size:.85rem;line-height:1.55;background:#f7f8fa;padding:12px;border-radius:9px;max-height:240px;overflow:auto}.toast{position:fixed;right:18px;bottom:18px;background:#1d2b23;color:#fff;padding:11px 14px;border-radius:9px;font-size:.82rem;box-shadow:0 10px 30px #0003;z-index:50}.toast[hidden]{display:none}.helper{font-size:.76rem;color:#7a8695;margin-top:7px}.danger-zone{margin-top:18px;padding-top:16px;border-top:1px solid #eceff3}.storage-note{font-size:.75rem;color:#7a8695;margin-top:14px;line-height:1.5}@media(max-width:860px){.layout{grid-template-columns:1fr}.sidebar{position:static}.hero{align-items:start;flex-direction:column}.filters{grid-template-columns:1fr}.nav{margin-bottom:30px}}@media(max-width:560px){.page{width:calc(100% - 24px)}.links{gap:10px;font-size:.78rem}.prompt-top{flex-direction:column}.field-row{grid-template-columns:1fr}.form-actions{flex-direction:column-reverse}.form-actions .btn{width:100%}}
+</style>
+</head>
+<body>
+<main class="page">
+<nav class="nav" aria-label="Toolkit navigation">
+<a class="brand" href="./">Webflow Toolkit</a>
+<div class="links">
+<a href="./seo-alt-text.html">SEO Alt Text Generator</a>
+<a href="./image-compressor.html">Image Compressor</a>
+<a href="./code-playground.html">Code Playground</a>
+<a href="./responsive-lab.html">Responsive Lab</a>
+<a href="./prompt-library.html" aria-current="page">Prompt Library</a>
+</div>
+</nav>
+
+<header class="hero">
+<div>
+<div class="eyebrow">Webflow Toolkit</div>
+<h1>Prompt Library</h1>
+<p class="intro">Save useful prompts, organize them by category, track your most-used prompts, and keep every revision in a version history.</p>
+</div>
+<button class="btn btn-primary" id="newPrompt" type="button">+ Add Prompt</button>
+</header>
+
+<div class="layout">
+<aside class="panel sidebar">
+<h2>Overview</h2>
+<div class="stat-grid">
+<div class="stat"><strong id="promptCount">0</strong><span>Prompts</span></div>
+<div class="stat"><strong id="copyCount">0</strong><span>Total copies</span></div>
+</div>
+<h2>Most used</h2>
+<ol class="rank" id="ranking"></ol>
+<p class="storage-note">Prompts are stored in this browser. Clearing browser storage will remove them.</p>
+</aside>
+
+<section class="panel content">
+<div class="content-head"><h2>Your prompts</h2><span class="meta" id="resultCount"></span></div>
+<div class="filters">
+<input id="search" type="search" placeholder="Search title or prompt..." autocomplete="off">
+<select id="categoryFilter" aria-label="Filter by category"><option value="">All categories</option></select>
+</div>
+<div class="prompt-list" id="promptList"></div>
+</section>
+</div>
+</main>
+
+<dialog class="dialog" id="editor">
+<form class="dialog-body" id="promptForm">
+<div class="dialog-head"><h2 id="editorTitle">Add Prompt</h2><button class="close" type="button" data-close="editor" aria-label="Close">×</button></div>
+<input type="hidden" id="promptId">
+<div class="field"><label for="title">Prompt title</label><div class="field-row"><input id="title" maxlength="100" required placeholder="e.g. Build a Webflow CMS filter"><button class="btn" id="suggestTitle" type="button">Suggest title</button></div><div class="helper">Use a short title that describes the result the prompt should produce.</div></div>
+<div class="field"><label for="category">Category</label><select id="category" required></select></div>
+<div class="field"><label for="promptText">Prompt</label><textarea id="promptText" required placeholder="Write or paste your prompt here..."></textarea></div>
+<div class="form-actions"><button class="btn" type="button" data-close="editor">Cancel</button><button class="btn btn-primary" type="submit">Save Prompt</button></div>
+</form>
+</dialog>
+
+<dialog class="dialog" id="versionsDialog">
+<div class="dialog-body">
+<div class="dialog-head"><div><h2 id="versionsTitle">Version history</h2><div class="helper">Oldest → newest</div></div><button class="close" type="button" data-close="versionsDialog" aria-label="Close">×</button></div>
+<div class="version-list" id="versionList"></div>
+</div>
+</dialog>
+
+<div class="toast" id="toast" hidden role="status" aria-live="polite"></div>
+<script src="./prompt-library.js"></script>
+</body>
+</html>
