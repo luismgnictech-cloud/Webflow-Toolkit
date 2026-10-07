@@ -121,7 +121,7 @@ async function findDataFile(){
 }
 function dataPayload(){
  return {
-  schemaVersion:1,
+  schemaVersion:2,
   updatedAt:now(),
   categories:CATEGORIES,
   prompts
@@ -148,6 +148,7 @@ async function loadData(){
  const text=await driveFetch("https://www.googleapis.com/drive/v3/files/"+encodeURIComponent(dataFileId)+"?alt=media");
  const parsed=typeof text==="string"?JSON.parse(text):text;
  prompts=Array.isArray(parsed?.prompts)?parsed.prompts:[];
+ normalizePrompts();
 }
 async function performSave(){
  if(!dataFileId)throw new Error("Google Drive data file is not ready.");
@@ -201,6 +202,19 @@ function disconnect(){
  accessToken="";tokenExpiresAt=0;folderId="";dataFileId="";prompts=[];initialized=false;syncChain=Promise.resolve();
  if(token&&window.google?.accounts?.oauth2)google.accounts.oauth2.revoke(token,()=>{});
  render();setDriveState("disconnected");
+}
+function normalizePrompts(){
+ for(const prompt of prompts){
+  if(!Array.isArray(prompt.versions))prompt.versions=[];
+  if(!Array.isArray(prompt.tests))prompt.tests=[];
+  if(!Number.isFinite(prompt.usageCount))prompt.usageCount=0;
+ }
+}
+function promptTests(prompt){return Array.isArray(prompt.tests)?prompt.tests:[]}
+function averageScore(prompt,version=null){
+ const tests=promptTests(prompt).filter(test=>version==null||Number(test.version)===Number(version));
+ if(!tests.length)return null;
+ return tests.reduce((sum,test)=>sum+Number(test.score||0),0)/tests.length;
 }
 function slugWords(text){return text.replace(/\s+/g," ").trim().split(" ").filter(Boolean)}
 function suggestTitle(text,category){
@@ -256,10 +270,24 @@ function promptCard(prompt){
  top.className="prompt-top";title.className="prompt-title";title.textContent=v.title;meta.className="meta";
  const badge=document.createElement("span"),version=document.createElement("span"),copies=document.createElement("span"),updated=document.createElement("span");
  badge.className="badge";badge.textContent=v.category;version.textContent="v"+v.version;copies.textContent=(prompt.usageCount||0)+" copies";updated.textContent="Updated "+formatDate(prompt.updatedAt);
- meta.append(badge,version,copies,updated);main.append(title,meta);top.append(main);
+ meta.append(badge,version,copies,updated);main.append(title,meta);
+ const testSummary=document.createElement("div");testSummary.className="test-summary";
+ const tests=promptTests(prompt),avg=averageScore(prompt);
+ const testsChip=document.createElement("span");testsChip.className="test-chip";testsChip.textContent=tests.length+" test"+(tests.length===1?"":"s");
+ testSummary.append(testsChip);
+ if(avg!==null){const scoreChip=document.createElement("span");scoreChip.className="test-chip score";scoreChip.textContent="Avg "+avg.toFixed(1)+"/10";testSummary.append(scoreChip)}
+ main.append(testSummary);top.append(main);
  const preview=document.createElement("div");preview.className="prompt-preview";preview.textContent=v.content;
  const actions=document.createElement("div");actions.className="card-actions";
- actions.append(button("Copy","btn btn-primary",()=>copyPrompt(prompt.id)),button("Edit","btn",()=>openEditor(prompt.id)),button("Versions ("+prompt.versions.length+")","btn",()=>showVersions(prompt.id)),button("Delete","btn btn-danger",()=>deletePrompt(prompt.id)));
+ actions.append(
+ button("Copy","btn btn-primary",()=>copyPrompt(prompt.id)),
+ button("Test","btn",()=>openTest(prompt.id)),
+ button("Tests ("+promptTests(prompt).length+")","btn",()=>showTests(prompt.id)),
+ button("Compare","btn",()=>openCompare(prompt.id)),
+ button("Edit","btn",()=>openEditor(prompt.id)),
+ button("Versions ("+prompt.versions.length+")","btn",()=>showVersions(prompt.id)),
+ button("Delete","btn btn-danger",()=>deletePrompt(prompt.id))
+);
  card.append(top,preview,actions);return card;
 }
 function button(text,className,fn){const b=document.createElement("button");b.type="button";b.className=className;b.textContent=text;b.addEventListener("click",fn);return b}
@@ -291,7 +319,7 @@ async function savePrompt(event){
    if(v.title===title&&v.category===category&&v.content===content){$("editor").close();notify("No changes to save");return}
    p.versions.push({version:v.version+1,title,category,content,createdAt:now()});p.updatedAt=now();
   }else{
-   const time=now();prompts.unshift({id:crypto.randomUUID(),createdAt:time,updatedAt:time,usageCount:0,lastUsedAt:null,versions:[{version:1,title,category,content,createdAt:time}]});
+   const time=now();prompts.unshift({id:crypto.randomUUID(),createdAt:time,updatedAt:time,usageCount:0,lastUsedAt:null,tests:[],versions:[{version:1,title,category,content,createdAt:time}]});
   }
   const wasEditing=Boolean(editingId);render();await saveToDrive();$("editor").close();editingId=null;notify(wasEditing?"New version saved online":"Prompt saved online");
  }catch(error){
@@ -305,6 +333,119 @@ async function deletePrompt(id){
  try{prompts=prompts.filter(x=>x.id!==id);render();await saveToDrive();notify("Prompt deleted online")}
  catch(error){prompts=JSON.parse(snapshot);render();notify("Delete failed: "+error.message)}
 }
+
+function versionByNumber(prompt,number){return prompt.versions.find(v=>Number(v.version)===Number(number))}
+function openTest(id){
+ const prompt=prompts.find(p=>p.id===id);if(!prompt||!initialized)return;
+ $("testForm").reset();
+ $("testPromptId").value=id;
+ $("testTitle").textContent="Test · "+latest(prompt).title;
+ $("testSubtitle").textContent="Record how a specific prompt version behaved in a real task.";
+ $("testVersion").replaceChildren(...prompt.versions.map(v=>new Option("Version "+v.version+" · "+v.title,v.version)));
+ $("testVersion").value=String(latest(prompt).version);
+ $("testScore").value="7";$("testScoreValue").textContent="7/10";
+ $("testDialog").showModal();
+}
+async function saveTest(event){
+ event.preventDefault();
+ const prompt=prompts.find(p=>p.id===$("testPromptId").value);if(!prompt)return;
+ const snapshot=JSON.stringify(prompts);
+ const test={
+  id:crypto.randomUUID(),
+  version:Number($("testVersion").value),
+  platform:$("testPlatform").value,
+  model:$("testModel").value.trim(),
+  scenario:$("testScenario").value.trim(),
+  expectedBehavior:$("expectedBehavior").value.trim(),
+  result:$("testResult").value.trim(),
+  score:Number($("testScore").value),
+  workedWell:$("workedWell").value.trim(),
+  problems:$("problemsFound").value.trim(),
+  improvementNotes:$("improvementNotes").value.trim(),
+  createdAt:now()
+ };
+ if(!test.scenario||!test.result)return;
+ try{
+  if(!Array.isArray(prompt.tests))prompt.tests=[];
+  prompt.tests.push(test);prompt.updatedAt=now();render();
+  await saveToDrive();$("testDialog").close();notify("Test saved online");
+ }catch(error){
+  prompts=JSON.parse(snapshot);render();notify("Test save failed: "+error.message);
+ }
+}
+function textBlock(label,value){
+ const block=document.createElement("div");block.className="test-block";
+ const strong=document.createElement("strong");strong.textContent=label;
+ const content=document.createElement("div");content.textContent=value||"—";
+ block.append(strong,content);return block;
+}
+function showTests(id){
+ const prompt=prompts.find(p=>p.id===id);if(!prompt)return;
+ $("testsTitle").textContent="Tests · "+latest(prompt).title;
+ const list=$("testList");list.replaceChildren();
+ const tests=[...promptTests(prompt)].sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt));
+ if(!tests.length){const empty=document.createElement("div");empty.className="empty";empty.textContent="No tests recorded yet.";list.append(empty)}
+ tests.forEach(test=>{
+  const item=document.createElement("article");item.className="test-item";
+  const head=document.createElement("div");head.className="test-item-head";
+  const info=document.createElement("div"),title=document.createElement("h3"),meta=document.createElement("div"),score=document.createElement("span");
+  const version=versionByNumber(prompt,test.version);
+  title.textContent=(test.platform||"Other")+(test.model?" · "+test.model:"");
+  meta.className="test-meta";meta.textContent="Version "+test.version+(version?" · "+version.title:"")+" · "+formatDate(test.createdAt);
+  score.className="score-badge";score.textContent=Number(test.score).toFixed(0)+"/10";
+  info.append(title,meta);head.append(info,score);
+  const grid=document.createElement("div");grid.className="test-grid";
+  grid.append(
+   textBlock("Scenario",test.scenario),
+   textBlock("Expected behavior",test.expectedBehavior),
+   textBlock("Observed result",test.result),
+   textBlock("What worked well",test.workedWell),
+   textBlock("Problems found",test.problems),
+   textBlock("Improvement notes",test.improvementNotes)
+  );
+  item.append(head,grid);list.append(item);
+ });
+ $("testsDialog").showModal();
+}
+function versionMetrics(prompt,version){
+ const tests=promptTests(prompt).filter(test=>Number(test.version)===Number(version));
+ const avg=averageScore(prompt,version),v=versionByNumber(prompt,version);
+ return {tests,avg,v};
+}
+function compareCard(prompt,version){
+ const {tests,avg,v}=versionMetrics(prompt,version);
+ const card=document.createElement("article");card.className="compare-card";
+ const h=document.createElement("h3");h.textContent="Version "+version+(v?" · "+v.title:"");
+ card.append(h);
+ const metrics=[
+  ["Tests",String(tests.length)],
+  ["Average score",avg===null?"No score":avg.toFixed(1)+"/10"],
+  ["Best score",tests.length?Math.max(...tests.map(t=>Number(t.score))).toFixed(0)+"/10":"—"],
+  ["Latest test",tests.length?formatDate([...tests].sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt))[0].createdAt):"—"]
+ ];
+ metrics.forEach(([label,value])=>{const row=document.createElement("div");row.className="compare-metric";const a=document.createElement("span"),b=document.createElement("strong");a.textContent=label;b.textContent=value;row.append(a,b);card.append(row)});
+ const notes=tests.map(t=>t.improvementNotes).filter(Boolean);
+ if(notes.length)card.append(textBlock("Improvement notes",notes.join("\n\n")));
+ return card;
+}
+function renderComparison(prompt){
+ const a=Number($("compareA").value),b=Number($("compareB").value);
+ const out=$("compareResults");out.replaceChildren(compareCard(prompt,a),compareCard(prompt,b));
+}
+function openCompare(id){
+ const prompt=prompts.find(p=>p.id===id);if(!prompt)return;
+ if(prompt.versions.length<2){notify("Create at least two prompt versions to compare");return}
+ $("compareTitle").textContent="Compare · "+latest(prompt).title;
+ const options=prompt.versions.map(v=>new Option("Version "+v.version+" · "+v.title,v.version));
+ $("compareA").replaceChildren(...options.map(o=>o.cloneNode(true)));
+ $("compareB").replaceChildren(...options.map(o=>o.cloneNode(true)));
+ $("compareA").value=String(prompt.versions[0].version);
+ $("compareB").value=String(latest(prompt).version);
+ $("compareA").onchange=()=>renderComparison(prompt);
+ $("compareB").onchange=()=>renderComparison(prompt);
+ renderComparison(prompt);$("compareDialog").showModal();
+}
+
 function showVersions(id){
  const p=prompts.find(x=>x.id===id);if(!p)return;
  $("versionsTitle").textContent=latest(p).title;
@@ -327,6 +468,8 @@ function waitForGoogleIdentity(){
 
 $("newPrompt").addEventListener("click",()=>openEditor());
 $("promptForm").addEventListener("submit",savePrompt);
+$("testForm").addEventListener("submit",saveTest);
+$("testScore").addEventListener("input",()=>$("testScoreValue").textContent=$("testScore").value+"/10");
 $("suggestTitle").addEventListener("click",()=>{$("title").value=suggestTitle($("promptText").value,$("category").value);$("title").focus()});
 $("search").addEventListener("input",render);
 $("categoryFilter").addEventListener("change",render);
@@ -334,7 +477,7 @@ $("connectDrive").addEventListener("click",()=>initializeDrive(true));
 $("syncDrive").addEventListener("click",async()=>{try{await saveToDrive();notify("Drive synced")}catch(error){notify(error.message)}});
 $("disconnectDrive").addEventListener("click",disconnect);
 document.querySelectorAll("[data-close]").forEach(btn=>btn.addEventListener("click",()=>$(btn.dataset.close).close()));
-[$("editor"),$("versionsDialog")].forEach(dialog=>dialog.addEventListener("click",e=>{if(e.target===dialog)dialog.close()}));
+[$("editor"),$("versionsDialog"),$("testDialog"),$("testsDialog"),$("compareDialog")].forEach(dialog=>dialog.addEventListener("click",e=>{if(e.target===dialog)dialog.close()}));
 
 initCategories();
 render();
