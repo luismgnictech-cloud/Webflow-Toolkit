@@ -5,7 +5,8 @@ const pages = {
   "seo-alt-text.html": ["Generate SEO Text", "</html>"],
   "image-compressor.html": ["id=\"files\"", "image-compressor.js", "</html>"],
   "code-playground.html": ["code-playground.js", "</html>"],
-  "responsive-lab.html": ["id=\"device-picker\"", "</html>"]
+  "responsive-lab.html": ["id=\"device-picker\"", "</html>"],
+  "prompt-library.html": ["id=\"promptList\"", "id=\"testDialog\"", "prompt-library.js", "</html>"]
 };
 
 let failed = false;
