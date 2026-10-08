@@ -259,7 +259,7 @@ async function processQueue(){
    }
    const finished=queue.filter(entry=>entry.state==="done");
    readyDownloads=finished.map(entry=>({
-    name:compressedName(entry.name),
+    name:entry.name,
     blob:entry.result.blob,
     originalSize:entry.size,
     compressedSize:entry.result.blob.size
