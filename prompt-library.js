@@ -298,6 +298,7 @@ function stats(){
 }
 function render(){
  refreshCategoryFilter();stats();
+ refreshPromptDetails();
  const term=$("search").value.trim().toLowerCase(),cat=$("categoryFilter").value;
  const filtered=[...prompts].filter(p=>{
   const v=latest(p);
@@ -323,18 +324,15 @@ function promptCard(prompt){
  if(avg!==null){const scoreChip=document.createElement("span");scoreChip.className="test-chip score";scoreChip.textContent="Avg "+avg.toFixed(1)+"/10";testSummary.append(scoreChip)}
  main.append(testSummary);top.append(main);
  const preview=document.createElement("div");preview.className="prompt-preview";preview.textContent=v.content;
- const actions=document.createElement("div");actions.className="card-actions";
- actions.append(
- button("Copy","btn btn-primary",()=>copyPrompt(prompt.id)),
- button("Download .md","btn",()=>downloadMarkdown(prompt.id)),
- button("Test","btn",()=>openTest(prompt.id)),
- button("Tests ("+promptTests(prompt).length+")","btn",()=>showTests(prompt.id)),
- button("Compare","btn",()=>openCompare(prompt.id)),
- button("Edit","btn",()=>openEditor(prompt.id)),
- button("Versions ("+prompt.versions.length+")","btn",()=>showVersions(prompt.id)),
- button("Delete","btn btn-danger",()=>deletePrompt(prompt.id))
-);
- card.append(top,preview,actions);return card;
+ card.tabIndex=0;card.setAttribute("role","button");
+ card.setAttribute("aria-label","View prompt: "+v.title);
+ card.setAttribute("aria-haspopup","dialog");
+ card.addEventListener("click",()=>openPromptDetails(prompt.id));
+ card.addEventListener("keydown",event=>{
+  if(event.key==="Enter"||event.key===" "){event.preventDefault();openPromptDetails(prompt.id)}
+ });
+ const hint=document.createElement("div");hint.className="helper";hint.textContent="Click to view full prompt and actions";
+ card.append(top,preview,hint);return card;
 }
 function button(text,className,fn){const b=document.createElement("button");b.type="button";b.className=className;b.textContent=text;b.addEventListener("click",fn);return b}
 function markdownFilename(title){
@@ -540,6 +538,74 @@ function showVersions(id){
  });
  $("versionsDialog").showModal();
 }
+
+let detailPromptId=null;
+const detailStyle=document.createElement("style");
+detailStyle.textContent=`
+.prompt-card[role=button]{cursor:pointer;transition:border-color .15s,background .15s}
+.prompt-card[role=button]:hover{border-color:#a7baff;background:#fafbff}
+.prompt-card[role=button]:focus-visible{outline:3px solid #a7baff;outline-offset:2px}
+.prompt-detail-body{display:flex;flex-direction:column;max-height:85vh;overflow:hidden}
+.prompt-detail-body .dialog-head{flex-shrink:0;align-items:flex-start}
+.prompt-detail-body h2{overflow-wrap:anywhere}
+.prompt-detail-content{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.65;color:#344155;overflow:auto;min-height:0;flex:1;padding:16px;background:#f7f8fa;border-radius:10px;margin-top:16px}
+.prompt-detail-body .card-actions{flex-shrink:0;border-top:1px solid #e1e6ee;padding-top:14px}
+`;
+document.head.append(detailStyle);
+const detailDialog=document.createElement("dialog");
+detailDialog.id="promptDetails";detailDialog.className="dialog dialog-wide";
+detailDialog.setAttribute("aria-labelledby","promptDetailsTitle");
+const detailBody=document.createElement("div");detailBody.className="dialog-body prompt-detail-body";
+const detailHead=document.createElement("div");detailHead.className="dialog-head";
+const detailTitle=document.createElement("h2");detailTitle.id="promptDetailsTitle";
+const detailClose=button("×","close",()=>detailDialog.close());detailClose.setAttribute("aria-label","Close prompt details");
+detailHead.append(detailTitle,detailClose);
+const detailMeta=document.createElement("div");detailMeta.className="meta";
+const detailContent=document.createElement("div");detailContent.className="prompt-detail-content";detailContent.tabIndex=0;
+const detailActions=document.createElement("div");
+detailBody.append(detailHead,detailMeta,detailContent,detailActions);
+detailDialog.append(detailBody);document.body.append(detailDialog);
+detailDialog.addEventListener("click",event=>{
+ if(event.target!==detailDialog)return;
+ const rect=detailDialog.getBoundingClientRect();
+ if(event.clientX<rect.left||event.clientX>rect.right||event.clientY<rect.top||event.clientY>rect.bottom)detailDialog.close();
+});
+detailDialog.addEventListener("close",()=>{detailPromptId=null});
+function refreshPromptDetails(){
+ if(!detailDialog.open)return;
+ const prompt=prompts.find(p=>p.id===detailPromptId);
+ if(!initialized||!prompt){detailDialog.close();return}
+ populatePromptDetails(prompt);
+}
+function populatePromptDetails(prompt){
+ const v=latest(prompt);
+ detailTitle.textContent=v.title;
+ detailMeta.replaceChildren();
+ const badge=document.createElement("span");badge.className="badge";badge.textContent=v.category;
+ const info=document.createElement("span");info.textContent="v"+v.version+" · "+(prompt.usageCount||0)+" copies · Updated "+formatDate(prompt.updatedAt);
+ detailMeta.append(badge,info);
+ detailContent.textContent=v.content;
+  const actions=document.createElement("div");actions.className="card-actions";
+ actions.append(
+ button("Copy","btn btn-primary",()=>copyPrompt(prompt.id)),
+ button("Download .md","btn",()=>downloadMarkdown(prompt.id)),
+ button("Test","btn",()=>openTest(prompt.id)),
+ button("Tests ("+promptTests(prompt).length+")","btn",()=>showTests(prompt.id)),
+ button("Compare","btn",()=>openCompare(prompt.id)),
+ button("Edit","btn",()=>openEditor(prompt.id)),
+ button("Versions ("+prompt.versions.length+")","btn",()=>showVersions(prompt.id)),
+ button("Delete","btn btn-danger",()=>deletePrompt(prompt.id))
+);
+
+ detailActions.replaceChildren(actions);
+}
+function openPromptDetails(id){
+ const prompt=prompts.find(p=>p.id===id);if(!prompt||!initialized)return;
+ detailPromptId=id;populatePromptDetails(prompt);
+ if(!detailDialog.open)detailDialog.showModal();
+ detailContent.scrollTop=0;
+}
+
 function waitForGoogleIdentity(){
  if(window.google?.accounts?.oauth2){
   tokenClient=google.accounts.oauth2.initTokenClient({client_id:CLIENT_ID,scope:DRIVE_SCOPE,callback:()=>{}});
